@@ -1,0 +1,596 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>qMS &mdash; qMS 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="qMS 0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="../index.html"><p style="font-size: 250%;">qMS module</p></a>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">home</a>|&nbsp;</li>
+        <li><a href="../search.html">search</a>|&nbsp;</li>
+	<li><a href="../contents.html">documentation </a> &raquo;</li>
+
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for qMS</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: qMS </span>
+<span class="sd">   :platform: Any</span>
+<span class="sd">   :synopsis: A collection of functions for qMS data processing and analysis</span>
+
+<span class="sd">.. moduleauthor:: Josh Silverman &lt;josh.silverman@gmail.com&gt;; Joey Davis &lt;joeydavis@gmail.com&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">urllib2</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">pylab</span>
+
+<span class="c">#qMS utilities</span>
+
+<span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">10000000</span><span class="p">)</span>
+<span class="p">[</span><span class="n">startindex</span><span class="p">,</span> <span class="n">pep_seq_index</span><span class="p">,</span> <span class="n">exp_mr_index</span><span class="p">,</span> <span class="n">csvopen</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">];</span>
+<span class="n">ribogenes</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;rpsA&#39;</span><span class="p">,</span> <span class="s">&#39;rpsB&#39;</span><span class="p">,</span><span class="s">&#39;rpsC&#39;</span><span class="p">,</span><span class="s">&#39;rpsD&#39;</span><span class="p">,</span><span class="s">&#39;rpsE&#39;</span><span class="p">,</span><span class="s">&#39;rpsF&#39;</span><span class="p">,</span><span class="s">&#39;rpsG&#39;</span><span class="p">,</span><span class="s">&#39;rpsH&#39;</span><span class="p">,</span><span class="s">&#39;rpsI&#39;</span><span class="p">,</span><span class="s">&#39;rpsJ&#39;</span><span class="p">,</span><span class="s">&#39;rpsK&#39;</span><span class="p">,</span><span class="s">&#39;rpsL&#39;</span><span class="p">,</span><span class="s">&#39;rpsM&#39;</span><span class="p">,</span><span class="s">&#39;rpsN&#39;</span><span class="p">,</span><span class="s">&#39;rpsO&#39;</span><span class="p">,</span><span class="s">&#39;rpsP&#39;</span><span class="p">,</span><span class="s">&#39;rpsQ&#39;</span><span class="p">,</span><span class="s">&#39;rpsR&#39;</span><span class="p">,</span><span class="s">&#39;rpsS&#39;</span><span class="p">,</span><span class="s">&#39;rpsT&#39;</span><span class="p">,</span><span class="s">&#39;rpsU&#39;</span><span class="p">,</span><span class="s">&#39;sra&#39;</span><span class="p">,</span><span class="s">&#39;rplA&#39;</span><span class="p">,</span><span class="s">&#39;rplB&#39;</span><span class="p">,</span><span class="s">&#39;rplC&#39;</span><span class="p">,</span><span class="s">&#39;rplD&#39;</span><span class="p">,</span><span class="s">&#39;rplE&#39;</span><span class="p">,</span><span class="s">&#39;rplF&#39;</span><span class="p">,</span><span class="s">&#39;rplJ&#39;</span><span class="p">,</span><span class="s">&#39;rplL&#39;</span><span class="p">,</span><span class="s">&#39;rplI&#39;</span><span class="p">,</span><span class="s">&#39;rplK&#39;</span><span class="p">,</span><span class="s">&#39;rplM&#39;</span><span class="p">,</span><span class="s">&#39;rplN&#39;</span><span class="p">,</span><span class="s">&#39;rplO&#39;</span><span class="p">,</span><span class="s">&#39;rplP&#39;</span><span class="p">,</span><span class="s">&#39;rplQ&#39;</span><span class="p">,</span><span class="s">&#39;rplR&#39;</span><span class="p">,</span><span class="s">&#39;rplS&#39;</span><span class="p">,</span><span class="s">&#39;rplT&#39;</span><span class="p">,</span><span class="s">&#39;rplU&#39;</span><span class="p">,</span><span class="s">&#39;rplV&#39;</span><span class="p">,</span><span class="s">&#39;rplW&#39;</span><span class="p">,</span><span class="s">&#39;rplX&#39;</span><span class="p">,</span><span class="s">&#39;rplY&#39;</span><span class="p">,</span><span class="s">&#39;rpmA&#39;</span><span class="p">,</span><span class="s">&#39;rpmB&#39;</span><span class="p">,</span><span class="s">&#39;rpmC&#39;</span><span class="p">,</span><span class="s">&#39;rpmD&#39;</span><span class="p">,</span><span class="s">&#39;rpmE&#39;</span><span class="p">,</span><span class="s">&#39;rpmF&#39;</span><span class="p">,</span><span class="s">&#39;rpmG&#39;</span><span class="p">,</span><span class="s">&#39;rpmH&#39;</span><span class="p">,</span><span class="s">&#39;rpmI&#39;</span><span class="p">,</span><span class="s">&#39;rpmJ&#39;</span><span class="p">]</span>
+<span class="n">referencePath</span> <span class="o">=</span> <span class="s">&#39;/home/jhdavis/scripts/python/modules/qMSmodule/&#39;</span>
+
+<div class="viewcode-block" id="calcPercent"><a class="viewcode-back" href="../qMS.html#qMS.calcPercent">[docs]</a><span class="k">def</span> <span class="nf">calcPercent</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">sigfig</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;calcPercent takes a floating point number, rounds it to the number of sigfigs (default 2) and</span>
+<span class="sd">        returns a string of that number multiplied by 100 and with a &#39; %&#39;</span>
+
+<span class="sd">    :param f: a floating point number to be converted to percentage</span>
+<span class="sd">    :type f: float</span>
+<span class="sd">    :param sigfig: the number of sigfigs to round to (default 2)</span>
+<span class="sd">    :type sigfig: int</span>
+<span class="sd">    :returns:  a string of the float rounded + &#39; %&#39;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">sigfig</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">+</span><span class="s">&quot; %&quot;</span>
+</div>
+<div class="viewcode-block" id="maxLabFunc"><a class="viewcode-back" href="../qMS.html#qMS.maxLabFunc">[docs]</a><span class="k">def</span> <span class="nf">maxLabFunc</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">t</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;maxLabFunc is a function to calculate the max labeling based on the equation from Stephen Chen&#39;s paper</span>
+
+<span class="sd">    :param k: the growth rate (calculated as ln(2)/doubling time)</span>
+<span class="sd">    :type k: float</span>
+<span class="sd">    :param t: the time (if a single number, you get back teh max lab at that point), </span>
+<span class="sd">        can accept an array and will give back the curve</span>
+<span class="sd">    :type t: float/int/array</span>
+<span class="sd">    :returns:  the max lab (array or single value)</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">k</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="poolFunc"><a class="viewcode-back" href="../qMS.html#qMS.poolFunc">[docs]</a><span class="k">def</span> <span class="nf">poolFunc</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">P</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;poolFunc is a function to calculate the labeling kinetics for a protein with a given pool size</span>
+<span class="sd">        Equation from Stephen Chen&#39;s paper</span>
+
+<span class="sd">    :param k: the growth rate (calculated as ln(2)/doubling time)</span>
+<span class="sd">    :type k: float</span>
+<span class="sd">    :param t: the time (if a single number, you get back teh max lab at that point), </span>
+<span class="sd">        can accept an array and will give back the curve    </span>
+<span class="sd">    :type t: float/int/array</span>
+<span class="sd">    :param P: The pool size (expressed as precursorPool/completedRibosomePool)</span>
+<span class="sd">    :type t: float</span>
+<span class="sd">    :returns:  the expected labeling (array or single value)</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">P</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="mf">0.0</span><span class="o">-</span><span class="n">k</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">P</span><span class="p">))</span><span class="o">*</span><span class="n">t</span><span class="p">))</span> <span class="o">-</span> <span class="p">((</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">P</span><span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="mf">0.0</span><span class="o">-</span><span class="n">k</span><span class="p">)</span><span class="o">*</span><span class="n">t</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="overLabelingFunc"><a class="viewcode-back" href="../qMS.html#qMS.overLabelingFunc">[docs]</a><span class="k">def</span> <span class="nf">overLabelingFunc</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;overLabelingFunc is a function to calculate the labeling kinetics for a protein with a given turnover rate</span>
+<span class="sd">        Equation from Stephen Chen&#39;s paper</span>
+
+<span class="sd">    :param k: the growth rate (calculated as ln(2)/doubling time)</span>
+<span class="sd">    :type k: float</span>
+<span class="sd">    :param t: the time (if a single number, you get back teh max lab at that point), </span>
+<span class="sd">        can accept an array and will give back the curve    </span>
+<span class="sd">    :type t: float/int/array</span>
+<span class="sd">    :param d: the turnover rate</span>
+<span class="sd">    :type d: float</span>
+<span class="sd">    :returns:  the expected labeling lab (array or single value)</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(((</span><span class="mf">0.0</span><span class="o">-</span><span class="n">k</span><span class="p">)</span><span class="o">+</span><span class="n">d</span><span class="p">)</span><span class="o">*</span><span class="n">t</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="growthRate"><a class="viewcode-back" href="../qMS.html#qMS.growthRate">[docs]</a><span class="k">def</span> <span class="nf">growthRate</span><span class="p">(</span><span class="n">doublingTime</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;growthRate calculates a growth rate k given a doubling time (units of k can be used in equations)</span>
+<span class="sd">        listed in Stephen Chen&#39;s paper</span>
+
+<span class="sd">    :param doublingTime: the doubling time of the cell in units of time (mins, secs)</span>
+<span class="sd">    :type doublingTime: floatz</span>
+<span class="sd">    :returns:  the growth rate k (units of inverse time) - calculated at ln(2)/k</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">doublingTime</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="getMedian"><a class="viewcode-back" href="../qMS.html#qMS.getMedian">[docs]</a><span class="k">def</span> <span class="nf">getMedian</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">,</span> <span class="n">proteinName</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;getMediantakes the outputs of calculateStatsFile (a dataByProteinDictionary structure), and a protein name,</span>
+<span class="sd">        it returns the median value of that protein</span>
+
+<span class="sd">    :param dataByProtein: a dictionary datastructure bearing keys of protein names, with values of dictionaries bearing</span>
+<span class="sd">        keys of vals, nvals, loc, flab</span>
+<span class="sd">    :type dataByProtein: a calculateStatsFiles dictionary of dictionaries</span>
+<span class="sd">    :param proteinName: a string of the protein to get the median value of </span>
+<span class="sd">    :type proteinName: string</span>
+<span class="sd">    :returns:  a float of the median value in the datastructure for that protein</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">[</span><span class="n">proteinName</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]))</span>
+</div>
+<div class="viewcode-block" id="calculateStatsFile"><a class="viewcode-back" href="../qMS.html#qMS.calculateStatsFile">[docs]</a><span class="k">def</span> <span class="nf">calculateStatsFile</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="n">protein_set</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;calculateStatsFile takes the outputs of readCSV (data_dictionary, protein_set), a numerator, a denominator,</span>
+<span class="sd">        and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)</span>
+
+<span class="sd">    :param data_dictionary: a dictionary of dictionaries, must contain uid keys for each peptide fit</span>
+<span class="sd">        each element in the dict is a dict with the keys protein, ampu, ampl, amps</span>
+<span class="sd">    :type filename: dictionary or dictionaries</span>
+<span class="sd">    :param protein_set: a set of protein names (must be the same names as given in the key protein in the subdict listed above)</span>
+<span class="sd">    :type protein_set: list</span>
+<span class="sd">    :param numerator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</span>
+<span class="sd">    :type numerator: list of strings</span>
+<span class="sd">    :param denominator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</span>
+<span class="sd">    :type denominator: list of strings</span>
+<span class="sd">    :param normalization: a float normalization factor if you want to scale all of the values uniformly</span>
+<span class="sd">    :type pnormalization: float</span>
+<span class="sd">    :returns:  a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).</span>
+<span class="sd">        This leads to a dictionary bearing keys &quot;vals&quot;, &quot;nvals&quot;, &quot;loc&quot;, &quot;flab&quot; which are a list of values,</span>
+<span class="sd">        the size of that list, the std dev of that list, the mean of that list</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataByProtein</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">protein_set</span><span class="p">:</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;flab&quot;</span> <span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;loc&quot;</span> <span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;nvals&quot;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;vals&quot;</span> <span class="p">:</span> <span class="p">[]}</span>
+        
+    <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="n">data_dictionary</span><span class="p">:</span>
+        <span class="n">parentProtein</span> <span class="o">=</span> <span class="n">data_dictionary</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s">&quot;protein&quot;</span><span class="p">]</span>
+
+        <span class="n">valNum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numerator</span><span class="p">:</span>
+            <span class="n">valNum</span> <span class="o">=</span> <span class="n">valNum</span> <span class="o">+</span> <span class="n">data_dictionary</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">valDen</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">denominator</span><span class="p">:</span>
+            <span class="n">valDen</span> <span class="o">=</span> <span class="n">valDen</span> <span class="o">+</span> <span class="n">data_dictionary</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">valNum</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">valDen</span><span class="p">)</span><span class="o">/</span><span class="n">normalization</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">parentProtein</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">parentProtein</span><span class="p">][</span><span class="s">&quot;nvals&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataByProtein</span><span class="p">[</span><span class="n">parentProtein</span><span class="p">][</span><span class="s">&quot;nvals&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">protein_set</span><span class="p">:</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;loc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">])</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;flab&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">])</span>
+        
+    <span class="k">return</span> <span class="n">dataByProtein</span>
+</div>
+<div class="viewcode-block" id="outputStatsFile"><a class="viewcode-back" href="../qMS.html#qMS.outputStatsFile">[docs]</a><span class="k">def</span> <span class="nf">outputStatsFile</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="n">protein_set</span><span class="p">,</span> <span class="n">filePrefix</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;outputStatsFile takes the outputs of readCSV (data_dictionary, protein_set), a numerator, a denominator,</span>
+<span class="sd">        and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)</span>
+
+<span class="sd">    :param data_dictionary: a dictionary of dictionaries, must contain uid keys for each peptide fit</span>
+<span class="sd">        each element in the dict is a dict with the keys protein, ampu, ampl, amps</span>
+<span class="sd">    :type filename: dictionary or dictionaries</span>
+<span class="sd">    :param protein_set: a set of protein names (must be the same names as given in the key protein in the subdict listed above)</span>
+<span class="sd">    :type protein_set: list</span>
+<span class="sd">    :param numerator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</span>
+<span class="sd">    :type numerator: list of strings</span>
+<span class="sd">    :param denominator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</span>
+<span class="sd">    :type denominator: list of strings</span>
+<span class="sd">    :param normalization: a float normalization factor if you want to scale all of the values uniformly</span>
+<span class="sd">    :type normalization: float</span>
+<span class="sd">    :returns:  a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).</span>
+<span class="sd">        This leads to a dictionary bearing keys &quot;vals&quot;, &quot;nvals&quot;, &quot;loc&quot;, &quot;flab&quot; which are a list of values,</span>
+<span class="sd">        the size of that list, the std dev of that list, the mean of that list</span>
+<span class="sd">   </span>
+<span class="sd">   &quot;&quot;&quot;</span>
+    
+    <span class="n">fileSuffix</span> <span class="o">=</span> <span class="s">&quot;-&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numerator</span><span class="p">:</span>
+        <span class="n">fileSuffix</span> <span class="o">=</span> <span class="n">fileSuffix</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;_p_&quot;</span>
+    <span class="n">fileSuffix</span> <span class="o">=</span> <span class="n">fileSuffix</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="s">&quot;_o_&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">denominator</span><span class="p">:</span>
+        <span class="n">fileSuffix</span> <span class="o">=</span> <span class="n">fileSuffix</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;_p_&quot;</span>
+    <span class="n">fileName</span> <span class="o">=</span> <span class="n">filePrefix</span><span class="o">+</span><span class="n">fileSuffix</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="s">&quot;.stats&quot;</span>
+    <span class="n">outfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+    
+    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;Protein flab +</span><span class="se">\\</span><span class="s">- loc nval vals</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+
+    <span class="n">dataByProtein</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">protein_set</span><span class="p">:</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;flab&quot;</span> <span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;loc&quot;</span> <span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;nvals&quot;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;vals&quot;</span> <span class="p">:</span> <span class="p">[]}</span>
+        
+    <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="n">data_dictionary</span><span class="p">:</span>
+        <span class="n">parentProtein</span> <span class="o">=</span> <span class="n">data_dictionary</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s">&#39;protein&#39;</span><span class="p">]</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">calcValue</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">[</span><span class="n">uid</span><span class="p">],</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">)</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">parentProtein</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">dataByProtein</span><span class="p">[</span><span class="n">parentProtein</span><span class="p">][</span><span class="s">&quot;nvals&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataByProtein</span><span class="p">[</span><span class="n">parentProtein</span><span class="p">][</span><span class="s">&quot;nvals&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+            
+    <span class="n">ordered</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">protein_set</span><span class="p">)</span>
+    <span class="n">ordered</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="n">locIter</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">:</span>
+        <span class="n">outString</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]))[:</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> \
+                    <span class="nb">str</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]))[:</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">locIter</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> \
+                    <span class="nb">str</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;nvals&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="s">&quot; &quot;</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]:</span>
+            <span class="n">outString</span> <span class="o">=</span> <span class="n">outString</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)[:</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="s">&quot; &quot;</span>    
+        <span class="n">outString</span> <span class="o">=</span> <span class="n">outString</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outString</span><span class="p">)</span>
+    <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="calcValue"><a class="viewcode-back" href="../qMS.html#qMS.calcValue">[docs]</a><span class="k">def</span> <span class="nf">calcValue</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;calcVale takes a data dictionary bearing the keys ampu, ampl, and (optionally) amps and calcultes</span>
+<span class="sd">        the ratio of the num/den (specified as lists of the ampu, ampl, amps above)</span>
+
+<span class="sd">    :param data: a dictionary with minimal keys for the ampu, ampl, amps listed in num, den</span>
+<span class="sd">    :type data: a dict</span>
+<span class="sd">    :param num: a list of the strings in the numerator (ampu, ampl, amps)</span>
+<span class="sd">    :type den: list</span>
+<span class="sd">    :param den: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</span>
+<span class="sd">    :type den: list of strings</span>
+<span class="sd">    :param offset: an optional offset float to move the point up or down</span>
+<span class="sd">    :type offset: float</span>
+<span class="sd">    :returns:  a float of the [(sum of the nums) divided by the (sum of the dens)] + the offset</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">num</span><span class="p">]</span>
+    <span class="n">valNum</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">:</span><span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">den</span><span class="p">]</span>
+    <span class="n">valDen</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">:</span><span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="p">,</span> <span class="n">ds</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">valNum</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">valDen</span><span class="p">)</span> <span class="o">+</span> <span class="n">offset</span>
+
+</div>
+<div class="viewcode-block" id="readCSV"><a class="viewcode-back" href="../qMS.html#qMS.readCSV">[docs]</a><span class="k">def</span> <span class="nf">readCSV</span><span class="p">(</span><span class="n">datapath</span><span class="p">,</span> <span class="n">pulse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;readCSV takes a filename (fully specified with datapath) and a boolean if this was a pulsed dataset</span>
+<span class="sd">        it return s a list of datastructures encompassing relavent information from the .csv file</span>
+
+<span class="sd">    :param datapath: a string specifiy the full path/name of the file to be read</span>
+<span class="sd">    :type datapath: string</span>
+<span class="sd">    :param pulse: a boolean indicating if the dataset is a pulsed dataset</span>
+<span class="sd">    :type pulse: boolean</span>
+<span class="sd">    :returns:  a list ([data_dictionary, protein_set, peptide_list])</span>
+<span class="sd">        data_dictionary has keys as UIDs, and values as dicts with</span>
+<span class="sd">            keys for protein, ampu, ampl, amps, isofile</span>
+<span class="sd">        protein_set is a set (list) of each protein in the dataset</span>
+<span class="sd">        peptide_list is a list of all peptides observed </span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span> <span class="nb">open</span><span class="p">(</span><span class="n">datapath</span><span class="p">,</span> <span class="s">&#39;rU&#39;</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c"># 1 - Find the indices for the quantities of interest using list comprehensions</span>
+    <span class="n">protein_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s">&quot;protein&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ampu_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s">&quot;AMP_U&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ampl_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s">&quot;AMP_L&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">UID_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s">&quot;isofile&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">pulse</span><span class="p">:</span>
+        <span class="n">amps_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="s">&quot;AMP_S&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c"># 2 - Declare the peptide list and the protein set</span>
+    <span class="n">peptide_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">protein_set</span>  <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="n">data_dictionary</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">csv_hold_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">UID_list</span> <span class="o">=</span> <span class="p">[]</span>
+    
+<span class="c"># 3 - Loop over data set, collect amplitudes, charge state, peptide sequence, protein id into protein_set</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">protein</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">protein_index</span><span class="p">]</span>
+        <span class="n">ampu</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">ampu_index</span><span class="p">])</span>
+        <span class="n">ampl</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">ampl_index</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">pulse</span><span class="p">:</span>
+            <span class="n">amps</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">amps_index</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">amps</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">UID</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">UID_index</span><span class="p">]</span>
+        <span class="n">csv_hold_dict</span><span class="p">[</span><span class="n">UID</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span>
+        <span class="n">UID_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">UID</span><span class="p">)</span>
+        <span class="n">identifier</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;protein&quot;</span><span class="p">:</span> <span class="n">protein</span><span class="p">,</span> <span class="s">&quot;ampu&quot;</span><span class="p">:</span> <span class="n">ampu</span><span class="p">,</span> <span class="s">&quot;ampl&quot;</span><span class="p">:</span> <span class="n">ampl</span><span class="p">,</span> <span class="s">&quot;amps&quot;</span><span class="p">:</span> <span class="n">amps</span><span class="p">,</span> <span class="s">&quot;uid&quot;</span><span class="p">:</span> <span class="n">UID</span><span class="p">}</span>
+        <span class="n">data_dictionary</span><span class="p">[</span><span class="n">UID</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;ampu&quot;</span><span class="p">:</span> <span class="n">ampu</span><span class="p">,</span> <span class="s">&quot;ampl&quot;</span><span class="p">:</span> <span class="n">ampl</span><span class="p">,</span> <span class="s">&quot;amps&quot;</span><span class="p">:</span> <span class="n">amps</span><span class="p">,</span> <span class="s">&quot;protein&quot;</span><span class="p">:</span> <span class="n">protein</span><span class="p">}</span>
+        <span class="n">protein_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">protein</span><span class="p">)</span>
+        <span class="n">peptide_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">identifier</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="n">protein_set</span><span class="p">,</span> <span class="n">peptide_list</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="getProtMedValue"><a class="viewcode-back" href="../qMS.html#qMS.getProtMedValue">[docs]</a><span class="k">def</span> <span class="nf">getProtMedValue</span><span class="p">(</span><span class="n">statsFileDict</span><span class="p">,</span> <span class="n">proteinName</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;getProtMedValue gets the median value of proteins values from a StatsFile-style data structure</span>
+
+<span class="sd">    :param statsFileDict: a statsFile-style dictionary (can be generated by calculateStatsFile </span>
+<span class="sd">        (which takes a data_dictionary from readCSV))</span>
+<span class="sd">    :type statsFileDict: dictionary (statsFilte type (needs keys of protein names (strings) and second dict of &#39;vals&#39;))</span>
+<span class="sd">    :param proteinName: name of the protein to get the med from</span>
+<span class="sd">    :type proteinName: string</span>
+<span class="sd">    :returns:  the median value in the &#39;vals&#39; field for that protein</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">statsFileDict</span><span class="p">[</span><span class="n">proteinName</span><span class="p">][</span><span class="s">&#39;vals&#39;</span><span class="p">]))</span>
+</div>
+<div class="viewcode-block" id="mergeFiles"><a class="viewcode-back" href="../qMS.html#qMS.mergeFiles">[docs]</a><span class="k">def</span> <span class="nf">mergeFiles</span><span class="p">(</span><span class="n">fileList</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">proteinToNormalizeTo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;mergeFiles takes a list of csv files and returns a merged statsFile data dictionary structure</span>
+
+<span class="sd">    :param fileList: a list of strings with the full path for reach .csv file</span>
+<span class="sd">    :type fileList: list (of strings)</span>
+<span class="sd">    :param pulse: a boolean of whether the datasetes are pulsed</span>
+<span class="sd">    :type pulse: boolean</span>
+<span class="sd">    :param numerator: a list of strings for what elements in the numerator (ampu, ampl, amps)</span>
+<span class="sd">    :type numerator: list of strings</span>
+<span class="sd">    :param denominator: a list of strings for what elements in the numerator (ampu, ampl, amps)</span>
+<span class="sd">    :type denominator: list of strings</span>
+<span class="sd">    :param proteinToNormalizeTo: string of what protein to normalize to (defaults to None)</span>
+<span class="sd">    :type proteinToNormalizeTo: strings</span>
+<span class="sd">    :returns:  the median value in the &#39;vals&#39; field for that protein</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">normalizedDataByProtein</span> <span class="o">=</span> <span class="n">getInfoToPlotStats</span><span class="p">(</span><span class="n">fileList</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">proteinToNormalizeTo</span><span class="p">)</span>
+    <span class="n">compositeDataSet</span> <span class="o">=</span> <span class="n">normalizedDataByProtein</span>
+    <span class="k">for</span> <span class="n">datapath</span> <span class="ow">in</span> <span class="n">fileList</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">normalizedDataByProtein</span> <span class="o">=</span> <span class="n">getInfoToPlotStats</span><span class="p">(</span><span class="n">datapath</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">proteinToNormalizeTo</span><span class="p">)</span>
+        <span class="n">compositeDataSet</span> <span class="o">=</span> <span class="n">composeDataSets</span><span class="p">(</span><span class="n">compositeDataSet</span><span class="p">,</span> <span class="n">normalizedDataByProtein</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">compositeDataSet</span>
+</div>
+<div class="viewcode-block" id="makePlotWithDataSets"><a class="viewcode-back" href="../qMS.html#qMS.makePlotWithDataSets">[docs]</a><span class="k">def</span> <span class="nf">makePlotWithDataSets</span><span class="p">(</span><span class="n">listOfDataSets</span><span class="p">,</span> <span class="n">proteinsToPlot</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;makePlotWithDataSets is a helper function to make nice &quot;massage-like&quot; plots of sets of datasets</span>
+
+<span class="sd">    :param listOfDataSets: a list of datasets to be plotted (each list must be a stats file-like data dictionary)</span>
+<span class="sd">    :type listOfDataSets: a list of stats file -like datasets</span>
+<span class="sd">    :param proteinsToPlot: a list of the proteins to be plotted (list of strings that are keys to the datasets)</span>
+<span class="sd">    :type proteinsToPlot: list of strings</span>
+<span class="sd">    :param name: the names of the datasets</span>
+<span class="sd">    :type name: list of strings for the dataset names (same order as listOfDataSets)</span>
+<span class="sd">    :returns: an axis with the plotted data</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;#ae2221&#39;</span><span class="p">,</span> <span class="s">&#39;#d72c2b&#39;</span><span class="p">,</span> <span class="s">&#39;#e78180&#39;</span><span class="p">,</span> <span class="s">&#39;#25557d&#39;</span><span class="p">,</span> <span class="s">&#39;#3170a4&#39;</span><span class="p">,</span> <span class="s">&#39;#5696cc&#39;</span><span class="p">]</span>
+    <span class="n">set1</span> <span class="o">=</span> <span class="n">listOfDataSets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">listOfDataSets</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c">#ax = plotStatsDataStruct(proteinsToPlot, set1, names[0], offset=0.5, markerSize = 15)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plotStatsDataStruct</span><span class="p">(</span><span class="n">proteinsToPlot</span><span class="p">,</span> <span class="n">set1</span><span class="p">,</span> <span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">offset</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">offsets</span><span class="p">,</span> <span class="n">markerSize</span> <span class="o">=</span> <span class="mi">10</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">listOfDataSets</span><span class="p">))</span><span class="o">+</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">dataSet</span> <span class="ow">in</span> <span class="n">listOfDataSets</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">addStatsDataStructToPlot</span><span class="p">(</span><span class="n">proteinsToPlot</span><span class="p">,</span> <span class="n">dataSet</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">offset</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">offsets</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mf">1.25</span><span class="p">),</span> <span class="n">markerSize</span> <span class="o">=</span> <span class="mi">10</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">listOfDataSets</span><span class="p">))</span><span class="o">+</span><span class="mi">4</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">ax</span>
+</div>
+<div class="viewcode-block" id="getInfoToPlotStats"><a class="viewcode-back" href="../qMS.html#qMS.getInfoToPlotStats">[docs]</a><span class="k">def</span> <span class="nf">getInfoToPlotStats</span><span class="p">(</span><span class="n">datapath</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">proteinToNormalizeTo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;getInfoToPlotStats is a helper funciton that reads a csv file and returns a normalized</span>
+<span class="sd">        statsfiledictionary</span>
+
+<span class="sd">    :param datapath: the full path to the .csv file</span>
+<span class="sd">    :type datapath: string</span>
+<span class="sd">    :param pulse: a bool if the dataset has been pulsed (does the csv have all of ampu, ampl, amps or just ampu, ampl)</span>
+<span class="sd">    :type pulse: boolean</span>
+<span class="sd">    :param numerator: a list of the items in the numerator (can be ampu, ampl, amps or any mix)</span>
+<span class="sd">    :type numerator: list of strings</span>
+<span class="sd">    :param denominator: a list of the items in the numerator (can be ampu, ampl, amps or any mix)</span>
+<span class="sd">    :type denominator: list of strings</span>
+<span class="sd">    :param proteinToNormalizeTo: the protein to normalize to (defaults to None)</span>
+<span class="sd">    :type proteinToNormalizeTo: string</span>
+<span class="sd">    :returns: a stats dictionary data structure that can then be easily plotted/manipulated</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="p">[</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="n">protein_set</span><span class="p">,</span> <span class="n">peptide_list</span><span class="p">]</span> <span class="o">=</span> <span class="n">readCSV</span><span class="p">(</span><span class="n">datapath</span><span class="p">,</span> <span class="n">pulse</span><span class="p">)</span>
+    <span class="n">dataByProtein</span> <span class="o">=</span> <span class="n">calculateStatsFile</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="n">protein_set</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">proteinToNormalizeTo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dataByProtein</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">normMed</span> <span class="o">=</span> <span class="n">getProtMedValue</span><span class="p">(</span><span class="n">dataByProtein</span><span class="p">,</span> <span class="n">proteinToNormalizeTo</span><span class="p">)</span>
+        <span class="n">normalizedDataByProtein</span> <span class="o">=</span> <span class="n">calculateStatsFile</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="n">protein_set</span><span class="p">,</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="n">normMed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">normalizedDataByProtein</span>
+</div>
+<div class="viewcode-block" id="composeDataSets"><a class="viewcode-back" href="../qMS.html#qMS.composeDataSets">[docs]</a><span class="k">def</span> <span class="nf">composeDataSets</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">toAdd</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;composeDataSets takes two StatsFileDatasets and composes them to return one dataset</span>
+
+<span class="sd">    :param comp: the StatsFileDatasturct to add to</span>
+<span class="sd">    :type comp: statsFile dictionary of dictionaries (needs the &#39;vals&#39; keys at least)</span>
+<span class="sd">    :param toAdd: the StatsFileDatasturct to add </span>
+<span class="sd">    :type toAdd: statsFile dictionary of dictionaries (needs the &#39;vals&#39; keys at least)</span>
+<span class="sd">    :returns: the composed statsfileDataStruct</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">proteinsToAdd</span> <span class="o">=</span> <span class="n">toAdd</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">proteinsToAdd</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">comp</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">toAdd</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]</span>
+            <span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;nvals&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">])</span>
+            <span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;loc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">])</span>
+            <span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;flab&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">comp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">toAdd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">comp</span>
+</div>
+<div class="viewcode-block" id="plotStatsDataStruct"><a class="viewcode-back" href="../qMS.html#qMS.plotStatsDataStruct">[docs]</a><span class="k">def</span> <span class="nf">plotStatsDataStruct</span><span class="p">(</span><span class="n">proteins</span><span class="p">,</span> <span class="n">dataByProtein</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">markerSize</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;#e31a1c&#39;</span><span class="p">,</span> <span class="n">yMax</span> <span class="o">=</span> <span class="mf">1.25</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;plotStatsDataStruct plots the contents of a stats file-like datastructure. proteins to be plotted are </span>
+<span class="sd">        listed in the non-redundent list, proteins. The data is in dataByProtein, the name is in in name.</span>
+<span class="sd">        Decent colors are red ([&#39;#ae2221&#39;, &#39;#d72c2b&#39;, &#39;#e78180&#39;]) and blue ([&#39;#25557d&#39;, &#39;#3170a4&#39;, &#39;#5696cc&#39;])</span>
+
+<span class="sd">    :param proteins: a non-redudent list of the protein names to use (should be the IDs in dataByProtein)</span>
+<span class="sd">    :type proteins: list</span>
+<span class="sd">    :param dataByProtein: a dictionary (easily created by calculateStatsFile), must contain &#39;vals&#39; for each p in proteins</span>
+<span class="sd">    :type dataByProtein: dictionary</span>
+<span class="sd">    :param name: the name of the dataset</span>
+<span class="sd">    :type name: string</span>
+<span class="sd">    :param offset: where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)</span>
+<span class="sd">    :type offset: float</span>
+<span class="sd">    :param markerSize: size of the dots (default = 12)</span>
+<span class="sd">    :type markerSize: int</span>
+<span class="sd">    :param color: color for the dataset (default #e31a1c)</span>
+<span class="sd">    :type color: color</span>
+<span class="sd">    :param yMax: the max value for the y axis</span>
+<span class="sd">    :type yMax: float</span>
+<span class="sd">    :returns:  a pyplot axis with the data plotted</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">xAxis</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">proteins</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">pylab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">22</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xAxis</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">proteins</span><span class="p">[</span><span class="n">x</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">dataByProtein</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]:</span>
+                <span class="n">xs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="n">offset</span><span class="p">)</span>
+                <span class="n">ys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">pylab</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s">&#39;major&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;grey&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">pylab</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s">&#39;major&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;grey&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markerSize</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">pylab</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">xAxis</span><span class="p">,</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">proteins</span><span class="p">],</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+    <span class="n">pylab</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">proteins</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c">####################################</span>
+    <span class="n">pylab</span><span class="o">.</span><span class="n">yticks</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.25</span><span class="p">,</span><span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+    <span class="c">####################################</span>
+    <span class="n">pylab</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">yMax</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span>
+    </div>
+<div class="viewcode-block" id="addStatsDataStructToPlot"><a class="viewcode-back" href="../qMS.html#qMS.addStatsDataStructToPlot">[docs]</a><span class="k">def</span> <span class="nf">addStatsDataStructToPlot</span><span class="p">(</span><span class="n">proteins</span><span class="p">,</span> <span class="n">dataByProtein</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">markerSize</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;#377db8&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;addStatsDataStructToPlot adds the contents of a stats file-like datastructure to an existing plot. proteins to be plotted are </span>
+<span class="sd">        listed in the non-redundent list, proteins. THESE MUST BE THE SAME PROTEINS GIVEN IN THE FIRST CALL TO PLOTSTATSDATASTRUCT</span>
+<span class="sd">        The data is in dataByProtein, the axis to add to is in ax, the name is in in name.</span>
+<span class="sd">        Decent colors are red ([&#39;#ae2221&#39;, &#39;#d72c2b&#39;, &#39;#e78180&#39;]) and blue ([&#39;#25557d&#39;, &#39;#3170a4&#39;, &#39;#5696cc&#39;])</span>
+
+<span class="sd">    :param proteins: a non-redudent list of the protein names to use (should be the IDs in dataByProtein)</span>
+<span class="sd">    :type proteins: list</span>
+<span class="sd">    :param dataByProtein: a dictionary (easily created by calculateStatsFile), must contain &#39;vals&#39; for each p in proteins</span>
+<span class="sd">    :type dataByProtein: dictionary</span>
+<span class="sd">    :param ax: the pyplot axis to modify</span>
+<span class="sd">    :type ax: pyplot axis</span>
+<span class="sd">    :param name: the name of the dataset</span>
+<span class="sd">    :type name: string</span>
+<span class="sd">    :param offset: where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)</span>
+<span class="sd">    :type offset: float</span>
+<span class="sd">    :param markerSize: size of the dots (default = 12)</span>
+<span class="sd">    :type markerSize: int</span>
+<span class="sd">    :param color: color for the dataset (default #e31a1c)</span>
+<span class="sd">    :type color: color</span>
+<span class="sd">    :returns:  a pyplot axis with the data plotted</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">xAxis</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">proteins</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xAxis</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">proteins</span><span class="p">[</span><span class="n">x</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">dataByProtein</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dataByProtein</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s">&quot;vals&quot;</span><span class="p">]:</span>
+                <span class="n">xs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="n">offset</span><span class="p">)</span>
+                <span class="n">ys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="s">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markerSize</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span>
+
+
+<span class="c">#fetches protein sequence from uniprot ID</span></div>
+<div class="viewcode-block" id="getsequence"><a class="viewcode-back" href="../qMS.html#qMS.getsequence">[docs]</a><span class="k">def</span> <span class="nf">getsequence</span><span class="p">(</span><span class="n">uniprot</span><span class="p">):</span>
+	<span class="k">try</span><span class="p">:</span>
+		<span class="n">urlbase</span> <span class="o">=</span> <span class="s">&quot;http://www.uniprot.org/uniprot/&quot;</span>
+		<span class="n">req</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">urlbase</span> <span class="o">+</span> <span class="n">uniprot</span> <span class="o">+</span> <span class="s">&quot;.fasta&quot;</span><span class="p">)</span>
+		<span class="n">response</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+		<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+		<span class="k">return</span> <span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">),</span> <span class="n">lines</span><span class="p">))</span>
+	<span class="k">except</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">URLError</span><span class="p">:</span>
+		<span class="k">print</span> <span class="s">&quot;No internet connection or bad Uniprot id&quot;</span>
+		
+<span class="c">#Returns the MAD of a list</span></div>
+<div class="viewcode-block" id="MAD"><a class="viewcode-back" href="../qMS.html#qMS.MAD">[docs]</a><span class="k">def</span> <span class="nf">MAD</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
+	<span class="n">temp_median</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+	<span class="n">temp_absdevs</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">item</span> <span class="o">-</span> <span class="n">temp_median</span><span class="p">),</span> <span class="nb">list</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">temp_absdevs</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">home</a>|&nbsp;</li>
+        <li><a href="../search.html">search</a>|&nbsp;</li>
+	<li><a href="../contents.html">documentation </a> &raquo;</li>
+
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Joey Davis, Josh Silverman.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

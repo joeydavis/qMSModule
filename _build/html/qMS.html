@@ -1,0 +1,535 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>qMS Module &mdash; qMS 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="qMS 0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html"><p style="font-size: 250%;">qMS module</p></a>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">home</a>|&nbsp;</li>
+        <li><a href="search.html">search</a>|&nbsp;</li>
+	<li><a href="contents.html">documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qMS.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-qMS">
+<span id="qms-module"></span><h1>qMS Module<a class="headerlink" href="#module-qMS" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-qMS"></span><dl class="function">
+<dt id="qMS.MAD">
+<tt class="descclassname">qMS.</tt><tt class="descname">MAD</tt><big>(</big><em>list</em><big>)</big><a class="reference internal" href="_modules/qMS.html#MAD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.MAD" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="qMS.addStatsDataStructToPlot">
+<tt class="descclassname">qMS.</tt><tt class="descname">addStatsDataStructToPlot</tt><big>(</big><em>proteins</em>, <em>dataByProtein</em>, <em>ax</em>, <em>name</em>, <em>offset=0.0</em>, <em>markerSize=12</em>, <em>color='#377db8'</em><big>)</big><a class="reference internal" href="_modules/qMS.html#addStatsDataStructToPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.addStatsDataStructToPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>addStatsDataStructToPlot adds the contents of a stats file-like datastructure to an existing plot. proteins to be plotted are 
+listed in the non-redundent list, proteins. THESE MUST BE THE SAME PROTEINS GIVEN IN THE FIRST CALL TO PLOTSTATSDATASTRUCT</p>
+<blockquote>
+<div>The data is in dataByProtein, the axis to add to is in ax, the name is in in name.
+Decent colors are red ([&#8216;#ae2221&#8217;, &#8216;#d72c2b&#8217;, &#8216;#e78180&#8217;]) and blue ([&#8216;#25557d&#8217;, &#8216;#3170a4&#8217;, &#8216;#5696cc&#8217;])</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>proteins</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a non-redudent list of the protein names to use (should be the IDs in dataByProtein)</li>
+<li><strong>dataByProtein</strong> (<em>dictionary</em>) &#8211; a dictionary (easily created by calculateStatsFile), must contain &#8216;vals&#8217; for each p in proteins</li>
+<li><strong>ax</strong> (<em>pyplot axis</em>) &#8211; the pyplot axis to modify</li>
+<li><strong>name</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; the name of the dataset</li>
+<li><strong>offset</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)</li>
+<li><strong>markerSize</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; size of the dots (default = 12)</li>
+<li><strong>color</strong> (<em>color</em>) &#8211; color for the dataset (default #e31a1c)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a pyplot axis with the data plotted</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.calcPercent">
+<tt class="descclassname">qMS.</tt><tt class="descname">calcPercent</tt><big>(</big><em>f</em>, <em>sigfig=2</em><big>)</big><a class="reference internal" href="_modules/qMS.html#calcPercent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.calcPercent" title="Permalink to this definition">¶</a></dt>
+<dd><p>calcPercent takes a floating point number, rounds it to the number of sigfigs (default 2) and
+returns a string of that number multiplied by 100 and with a &#8216; %&#8217;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>f</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; a floating point number to be converted to percentage</li>
+<li><strong>sigfig</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; the number of sigfigs to round to (default 2)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a string of the float rounded + &#8216; %&#8217;</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.calcValue">
+<tt class="descclassname">qMS.</tt><tt class="descname">calcValue</tt><big>(</big><em>data</em>, <em>num</em>, <em>den</em>, <em>offset=0.0</em><big>)</big><a class="reference internal" href="_modules/qMS.html#calcValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.calcValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>calcVale takes a data dictionary bearing the keys ampu, ampl, and (optionally) amps and calcultes
+the ratio of the num/den (specified as lists of the ampu, ampl, amps above)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> (<em>a dict</em>) &#8211; a dictionary with minimal keys for the ampu, ampl, amps listed in num, den</li>
+<li><strong>num</strong> &#8211; a list of the strings in the numerator (ampu, ampl, amps)</li>
+<li><strong>den</strong> (<em>list of strings</em>) &#8211; a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</li>
+<li><strong>offset</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; an optional offset float to move the point up or down</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a float of the [(sum of the nums) divided by the (sum of the dens)] + the offset</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.calculateStatsFile">
+<tt class="descclassname">qMS.</tt><tt class="descname">calculateStatsFile</tt><big>(</big><em>data_dictionary</em>, <em>protein_set</em>, <em>numerator</em>, <em>denominator</em>, <em>normalization=1.0</em><big>)</big><a class="reference internal" href="_modules/qMS.html#calculateStatsFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.calculateStatsFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculateStatsFile takes the outputs of readCSV (data_dictionary, protein_set), a numerator, a denominator,
+and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data_dictionary</strong> &#8211; a dictionary of dictionaries, must contain uid keys for each peptide fit
+each element in the dict is a dict with the keys protein, ampu, ampl, amps</li>
+<li><strong>protein_set</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a set of protein names (must be the same names as given in the key protein in the subdict listed above)</li>
+<li><strong>numerator</strong> (<em>list of strings</em>) &#8211; a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</li>
+<li><strong>denominator</strong> (<em>list of strings</em>) &#8211; a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</li>
+<li><strong>normalization</strong> &#8211; a float normalization factor if you want to scale all of the values uniformly</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).
+This leads to a dictionary bearing keys &#8220;vals&#8221;, &#8220;nvals&#8221;, &#8220;loc&#8221;, &#8220;flab&#8221; which are a list of values,
+the size of that list, the std dev of that list, the mean of that list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.composeDataSets">
+<tt class="descclassname">qMS.</tt><tt class="descname">composeDataSets</tt><big>(</big><em>comp</em>, <em>toAdd</em><big>)</big><a class="reference internal" href="_modules/qMS.html#composeDataSets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.composeDataSets" title="Permalink to this definition">¶</a></dt>
+<dd><p>composeDataSets takes two StatsFileDatasets and composes them to return one dataset</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>comp</strong> (<em>statsFile dictionary of dictionaries (needs the &#8216;vals&#8217; keys at least)</em>) &#8211; the StatsFileDatasturct to add to</li>
+<li><strong>toAdd</strong> (<em>statsFile dictionary of dictionaries (needs the &#8216;vals&#8217; keys at least)</em>) &#8211; the StatsFileDatasturct to add</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the composed statsfileDataStruct</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.getInfoToPlotStats">
+<tt class="descclassname">qMS.</tt><tt class="descname">getInfoToPlotStats</tt><big>(</big><em>datapath</em>, <em>pulse</em>, <em>numerator</em>, <em>denominator</em>, <em>proteinToNormalizeTo=None</em><big>)</big><a class="reference internal" href="_modules/qMS.html#getInfoToPlotStats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.getInfoToPlotStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>getInfoToPlotStats is a helper funciton that reads a csv file and returns a normalized
+statsfiledictionary</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>datapath</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; the full path to the .csv file</li>
+<li><strong>pulse</strong> (<em>boolean</em>) &#8211; a bool if the dataset has been pulsed (does the csv have all of ampu, ampl, amps or just ampu, ampl)</li>
+<li><strong>numerator</strong> (<em>list of strings</em>) &#8211; a list of the items in the numerator (can be ampu, ampl, amps or any mix)</li>
+<li><strong>denominator</strong> (<em>list of strings</em>) &#8211; a list of the items in the numerator (can be ampu, ampl, amps or any mix)</li>
+<li><strong>proteinToNormalizeTo</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; the protein to normalize to (defaults to None)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a stats dictionary data structure that can then be easily plotted/manipulated</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.getMedian">
+<tt class="descclassname">qMS.</tt><tt class="descname">getMedian</tt><big>(</big><em>dataByProtein</em>, <em>proteinName</em><big>)</big><a class="reference internal" href="_modules/qMS.html#getMedian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.getMedian" title="Permalink to this definition">¶</a></dt>
+<dd><p>getMediantakes the outputs of calculateStatsFile (a dataByProteinDictionary structure), and a protein name,
+it returns the median value of that protein</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataByProtein</strong> (<em>a calculateStatsFiles dictionary of dictionaries</em>) &#8211; a dictionary datastructure bearing keys of protein names, with values of dictionaries bearing
+keys of vals, nvals, loc, flab</li>
+<li><strong>proteinName</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; a string of the protein to get the median value of</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a float of the median value in the datastructure for that protein</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.getProtMedValue">
+<tt class="descclassname">qMS.</tt><tt class="descname">getProtMedValue</tt><big>(</big><em>statsFileDict</em>, <em>proteinName</em><big>)</big><a class="reference internal" href="_modules/qMS.html#getProtMedValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.getProtMedValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>getProtMedValue gets the median value of proteins values from a StatsFile-style data structure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>statsFileDict</strong> (<em>dictionary (statsFilte type (needs keys of protein names (strings) and second dict of &#8216;vals&#8217;))</em>) &#8211; a statsFile-style dictionary (can be generated by calculateStatsFile 
+(which takes a data_dictionary from readCSV))</li>
+<li><strong>proteinName</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; name of the protein to get the med from</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the median value in the &#8216;vals&#8217; field for that protein</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.getsequence">
+<tt class="descclassname">qMS.</tt><tt class="descname">getsequence</tt><big>(</big><em>uniprot</em><big>)</big><a class="reference internal" href="_modules/qMS.html#getsequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.getsequence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="qMS.growthRate">
+<tt class="descclassname">qMS.</tt><tt class="descname">growthRate</tt><big>(</big><em>doublingTime</em><big>)</big><a class="reference internal" href="_modules/qMS.html#growthRate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.growthRate" title="Permalink to this definition">¶</a></dt>
+<dd><p>growthRate calculates a growth rate k given a doubling time (units of k can be used in equations)
+listed in Stephen Chen&#8217;s paper</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>doublingTime</strong> (<em>floatz</em>) &#8211; the doubling time of the cell in units of time (mins, secs)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the growth rate k (units of inverse time) - calculated at ln(2)/k</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.makePlotWithDataSets">
+<tt class="descclassname">qMS.</tt><tt class="descname">makePlotWithDataSets</tt><big>(</big><em>listOfDataSets</em>, <em>proteinsToPlot</em>, <em>names</em>, <em>colors=None</em><big>)</big><a class="reference internal" href="_modules/qMS.html#makePlotWithDataSets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.makePlotWithDataSets" title="Permalink to this definition">¶</a></dt>
+<dd><p>makePlotWithDataSets is a helper function to make nice &#8220;massage-like&#8221; plots of sets of datasets</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>listOfDataSets</strong> (<em>a list of stats file -like datasets</em>) &#8211; a list of datasets to be plotted (each list must be a stats file-like data dictionary)</li>
+<li><strong>proteinsToPlot</strong> (<em>list of strings</em>) &#8211; a list of the proteins to be plotted (list of strings that are keys to the datasets)</li>
+<li><strong>name</strong> (<em>list of strings for the dataset names (same order as listOfDataSets)</em>) &#8211; the names of the datasets</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">an axis with the plotted data</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.maxLabFunc">
+<tt class="descclassname">qMS.</tt><tt class="descname">maxLabFunc</tt><big>(</big><em>k</em>, <em>t</em><big>)</big><a class="reference internal" href="_modules/qMS.html#maxLabFunc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.maxLabFunc" title="Permalink to this definition">¶</a></dt>
+<dd><p>maxLabFunc is a function to calculate the max labeling based on the equation from Stephen Chen&#8217;s paper</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>k</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the growth rate (calculated as ln(2)/doubling time)</li>
+<li><strong>t</strong> (<em>float/int/array</em>) &#8211; the time (if a single number, you get back teh max lab at that point), 
+can accept an array and will give back the curve</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the max lab (array or single value)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.mergeFiles">
+<tt class="descclassname">qMS.</tt><tt class="descname">mergeFiles</tt><big>(</big><em>fileList</em>, <em>pulse</em>, <em>numerator</em>, <em>denominator</em>, <em>proteinToNormalizeTo=None</em><big>)</big><a class="reference internal" href="_modules/qMS.html#mergeFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.mergeFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>mergeFiles takes a list of csv files and returns a merged statsFile data dictionary structure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fileList</strong> (<em>list (of strings)</em>) &#8211; a list of strings with the full path for reach .csv file</li>
+<li><strong>pulse</strong> (<em>boolean</em>) &#8211; a boolean of whether the datasetes are pulsed</li>
+<li><strong>numerator</strong> (<em>list of strings</em>) &#8211; a list of strings for what elements in the numerator (ampu, ampl, amps)</li>
+<li><strong>denominator</strong> (<em>list of strings</em>) &#8211; a list of strings for what elements in the numerator (ampu, ampl, amps)</li>
+<li><strong>proteinToNormalizeTo</strong> (<em>strings</em>) &#8211; string of what protein to normalize to (defaults to None)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the median value in the &#8216;vals&#8217; field for that protein</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.outputStatsFile">
+<tt class="descclassname">qMS.</tt><tt class="descname">outputStatsFile</tt><big>(</big><em>data_dictionary</em>, <em>protein_set</em>, <em>filePrefix</em>, <em>numerator</em>, <em>denominator</em><big>)</big><a class="reference internal" href="_modules/qMS.html#outputStatsFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.outputStatsFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>outputStatsFile takes the outputs of readCSV (data_dictionary, protein_set), a numerator, a denominator,
+and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data_dictionary</strong> &#8211; a dictionary of dictionaries, must contain uid keys for each peptide fit
+each element in the dict is a dict with the keys protein, ampu, ampl, amps</li>
+<li><strong>protein_set</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a set of protein names (must be the same names as given in the key protein in the subdict listed above)</li>
+<li><strong>numerator</strong> (<em>list of strings</em>) &#8211; a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</li>
+<li><strong>denominator</strong> (<em>list of strings</em>) &#8211; a list of strings identifying the numerator (must be ampu, ampl, and/or amps)</li>
+<li><strong>normalization</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; a float normalization factor if you want to scale all of the values uniformly</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).
+This leads to a dictionary bearing keys &#8220;vals&#8221;, &#8220;nvals&#8221;, &#8220;loc&#8221;, &#8220;flab&#8221; which are a list of values,
+the size of that list, the std dev of that list, the mean of that list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.overLabelingFunc">
+<tt class="descclassname">qMS.</tt><tt class="descname">overLabelingFunc</tt><big>(</big><em>k</em>, <em>t</em>, <em>d</em><big>)</big><a class="reference internal" href="_modules/qMS.html#overLabelingFunc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.overLabelingFunc" title="Permalink to this definition">¶</a></dt>
+<dd><p>overLabelingFunc is a function to calculate the labeling kinetics for a protein with a given turnover rate
+Equation from Stephen Chen&#8217;s paper</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>k</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the growth rate (calculated as ln(2)/doubling time)</li>
+<li><strong>t</strong> (<em>float/int/array</em>) &#8211; the time (if a single number, you get back teh max lab at that point), 
+can accept an array and will give back the curve</li>
+<li><strong>d</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the turnover rate</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the expected labeling lab (array or single value)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.plotStatsDataStruct">
+<tt class="descclassname">qMS.</tt><tt class="descname">plotStatsDataStruct</tt><big>(</big><em>proteins</em>, <em>dataByProtein</em>, <em>name</em>, <em>offset=0.0</em>, <em>markerSize=12</em>, <em>color='#e31a1c'</em>, <em>yMax=1.25</em><big>)</big><a class="reference internal" href="_modules/qMS.html#plotStatsDataStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.plotStatsDataStruct" title="Permalink to this definition">¶</a></dt>
+<dd><p>plotStatsDataStruct plots the contents of a stats file-like datastructure. proteins to be plotted are 
+listed in the non-redundent list, proteins. The data is in dataByProtein, the name is in in name.</p>
+<blockquote>
+<div>Decent colors are red ([&#8216;#ae2221&#8217;, &#8216;#d72c2b&#8217;, &#8216;#e78180&#8217;]) and blue ([&#8216;#25557d&#8217;, &#8216;#3170a4&#8217;, &#8216;#5696cc&#8217;])</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>proteins</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a non-redudent list of the protein names to use (should be the IDs in dataByProtein)</li>
+<li><strong>dataByProtein</strong> (<em>dictionary</em>) &#8211; a dictionary (easily created by calculateStatsFile), must contain &#8216;vals&#8217; for each p in proteins</li>
+<li><strong>name</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; the name of the dataset</li>
+<li><strong>offset</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)</li>
+<li><strong>markerSize</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; size of the dots (default = 12)</li>
+<li><strong>color</strong> (<em>color</em>) &#8211; color for the dataset (default #e31a1c)</li>
+<li><strong>yMax</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the max value for the y axis</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a pyplot axis with the data plotted</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.poolFunc">
+<tt class="descclassname">qMS.</tt><tt class="descname">poolFunc</tt><big>(</big><em>k</em>, <em>t</em>, <em>P</em><big>)</big><a class="reference internal" href="_modules/qMS.html#poolFunc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.poolFunc" title="Permalink to this definition">¶</a></dt>
+<dd><p>poolFunc is a function to calculate the labeling kinetics for a protein with a given pool size
+Equation from Stephen Chen&#8217;s paper</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>k</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the growth rate (calculated as ln(2)/doubling time)</li>
+<li><strong>t</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the time (if a single number, you get back teh max lab at that point), 
+can accept an array and will give back the curve</li>
+<li><strong>P</strong> &#8211; The pool size (expressed as precursorPool/completedRibosomePool)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the expected labeling (array or single value)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qMS.readCSV">
+<tt class="descclassname">qMS.</tt><tt class="descname">readCSV</tt><big>(</big><em>datapath</em>, <em>pulse</em><big>)</big><a class="reference internal" href="_modules/qMS.html#readCSV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qMS.readCSV" title="Permalink to this definition">¶</a></dt>
+<dd><p>readCSV takes a filename (fully specified with datapath) and a boolean if this was a pulsed dataset
+it return s a list of datastructures encompassing relavent information from the .csv file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>datapath</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; a string specifiy the full path/name of the file to be read</li>
+<li><strong>pulse</strong> (<em>boolean</em>) &#8211; a boolean indicating if the dataset is a pulsed dataset</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>a list ([data_dictionary, protein_set, peptide_list])
+data_dictionary has keys as UIDs, and values as dicts with</p>
+<blockquote>
+<div><p>keys for protein, ampu, ampl, amps, isofile</p>
+</div></blockquote>
+<p>protein_set is a set (list) of each protein in the dataset
+peptide_list is a list of all peptides observed</p>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">home</a>|&nbsp;</li>
+        <li><a href="search.html">search</a>|&nbsp;</li>
+	<li><a href="contents.html">documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Joey Davis, Josh Silverman.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
