@@ -10,7 +10,6 @@
 import os
 import csv
 import sys
-import csv
 import urllib2
 import numpy
 import pylab
@@ -139,6 +138,50 @@ def getMedian(dataByProtein, proteinName):
 
     """
     return float(numpy.median(dataByProtein[proteinName]["vals"]))
+
+def calculateStatsFileDF(dataFrame, protein_set, numerator, denominator, normalization=1.0):
+    """calculateStatsFile takes a dataFrame and a protein_set, a numerator, a denominator,
+        and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)
+
+    :param data_dictionary: a dictionary of dictionaries, must contain uid keys for each peptide fit
+        each element in the dict is a dict with the keys protein, ampu, ampl, amps
+    :type filename: dictionary or dictionaries
+    :param protein_set: a set of protein names (must be the same names as given in the key protein in the subdict listed above)
+    :type protein_set: list
+    :param numerator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
+    :type numerator: list of strings
+    :param denominator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
+    :type denominator: list of strings
+    :param normalization: a float normalization factor if you want to scale all of the values uniformly
+    :type pnormalization: float
+    :returns:  a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).
+        This leads to a dictionary bearing keys "vals", "nvals", "loc", "flab" which are a list of values,
+        the size of that list, the std dev of that list, the mean of that list
+
+    """
+    dataByProtein = {}
+    for p in protein_set:
+        dataByProtein[p] = {"flab" : -1, "loc" : -1, "nvals" : 0, "vals" : []}
+        
+    for uid in data_dictionary:
+        parentProtein = data_dictionary[uid]["protein"]
+
+        valNum = 0
+        for i in numerator:
+            valNum = valNum + data_dictionary[uid][i]
+        valDen = 0
+        for i in denominator:
+            valDen = valDen + data_dictionary[uid][i]
+
+        value = float(valNum)/float(valDen)/normalization
+        dataByProtein[parentProtein]["vals"].append(value)
+        dataByProtein[parentProtein]["nvals"] = dataByProtein[parentProtein]["nvals"] + 1
+        
+    for p in protein_set:
+        dataByProtein[p]["loc"] = numpy.std(dataByProtein[p]["vals"])
+        dataByProtein[p]["flab"] = numpy.mean(dataByProtein[p]["vals"])
+        
+    return dataByProtein
 
 def calculateStatsFile(data_dictionary, protein_set, numerator, denominator, normalization=1.0):
     """calculateStatsFile takes the outputs of readCSV (data_dictionary, protein_set), a numerator, a denominator,
@@ -293,6 +336,7 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             datPd['fit'] = datPd['residAdj']+datPd['dat']
             calcResid = datPd['resid'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
         except IOError:
+            print "Had trouble reading the .dat file for " + datFileName
             datPd['fit'] = numpy.nan
             calcResid = numpy.nan
         row = dataFrame[dataFrame['isofile']==iso]
@@ -301,58 +345,6 @@ def calcResidual(datapath, dataFrame, genPlots=False):
         if genPlots:
             datPd.to_csv(datapath+iso+'.plots', index=False)
     return dataFrame
-
-def readCSV(datapath, pulse):
-    """readCSV takes a filename (fully specified with datapath) and a boolean if this was a pulsed dataset
-        it return s a list of datastructures encompassing relavent information from the .csv file
-
-    :param datapath: a string specifiy the full path/name of the file to be read
-    :type datapath: string
-    :param pulse: a boolean indicating if the dataset is a pulsed dataset
-    :type pulse: boolean
-    :returns:  a list ([data_dictionary, protein_set, peptide_list])
-        data_dictionary has keys as UIDs, and values as dicts with
-            keys for protein, ampu, ampl, amps, isofile
-        protein_set is a set (list) of each protein in the dataset
-        peptide_list is a list of all peptides observed 
-        
-    """
-    data = list( csv.reader( open(datapath, 'rU') ) )
-    header = data[0]
-
-# 1 - Find the indices for the quantities of interest using list comprehensions
-    protein_index = [index for index, item in enumerate(header) if item == "protein"][0]
-    ampu_index = [index for index, item in enumerate(header) if item == "AMP_U"][0]
-    ampl_index = [index for index, item in enumerate(header) if item == "AMP_L"][0]
-    UID_index = [index for index, item in enumerate(header) if item == "isofile"][0]
-    if pulse:
-        amps_index = [index for index, item in enumerate(header) if item == "AMP_S"][0]
-
-# 2 - Declare the peptide list and the protein set
-    peptide_list = []
-    protein_set  = set()
-
-    data_dictionary = {}
-    csv_hold_dict = {}
-    UID_list = []
-    
-# 3 - Loop over data set, collect amplitudes, charge state, peptide sequence, protein id into protein_set
-    for line in data[1:]:
-        protein = line[protein_index]
-        ampu = float(line[ampu_index])
-        ampl = float(line[ampl_index])
-        if pulse:
-            amps = float(line[amps_index])
-        else:
-            amps = float(0)
-        UID = line[UID_index]
-        csv_hold_dict[UID] = line
-        UID_list.append(UID)
-        identifier = {"protein": protein, "ampu": ampu, "ampl": ampl, "amps": amps, "uid": UID}
-        data_dictionary[UID] = {"ampu": ampu, "ampl": ampl, "amps": amps, "protein": protein}
-        protein_set.add(protein)
-        peptide_list.append(identifier)
-    return [data_dictionary, protein_set, peptide_list]
 
 def getProtMedValue(statsFileDict, proteinName):
     """getProtMedValue gets the median value of proteins values from a StatsFile-style data structure
@@ -625,3 +617,56 @@ def MAD(list):
 	temp_median = numpy.median(list)
 	temp_absdevs = map(lambda item: abs(item - temp_median), list)
 	return numpy.median(temp_absdevs)
+
+'''DEPRECATED FUNCTIONS'''
+def readCSV(datapath, pulse):
+    """readCSV takes a filename (fully specified with datapath) and a boolean if this was a pulsed dataset
+        it return s a list of datastructures encompassing relavent information from the .csv file
+
+    :param datapath: a string specifiy the full path/name of the file to be read
+    :type datapath: string
+    :param pulse: a boolean indicating if the dataset is a pulsed dataset
+    :type pulse: boolean
+    :returns:  a list ([data_dictionary, protein_set, peptide_list])
+        data_dictionary has keys as UIDs, and values as dicts with
+            keys for protein, ampu, ampl, amps, isofile
+        protein_set is a set (list) of each protein in the dataset
+        peptide_list is a list of all peptides observed 
+        
+    """
+    data = list( csv.reader( open(datapath, 'rU') ) )
+    header = data[0]
+
+# 1 - Find the indices for the quantities of interest using list comprehensions
+    protein_index = [index for index, item in enumerate(header) if item == "protein"][0]
+    ampu_index = [index for index, item in enumerate(header) if item == "AMP_U"][0]
+    ampl_index = [index for index, item in enumerate(header) if item == "AMP_L"][0]
+    UID_index = [index for index, item in enumerate(header) if item == "isofile"][0]
+    if pulse:
+        amps_index = [index for index, item in enumerate(header) if item == "AMP_S"][0]
+
+# 2 - Declare the peptide list and the protein set
+    peptide_list = []
+    protein_set  = set()
+
+    data_dictionary = {}
+    csv_hold_dict = {}
+    UID_list = []
+    
+# 3 - Loop over data set, collect amplitudes, charge state, peptide sequence, protein id into protein_set
+    for line in data[1:]:
+        protein = line[protein_index]
+        ampu = float(line[ampu_index])
+        ampl = float(line[ampl_index])
+        if pulse:
+            amps = float(line[amps_index])
+        else:
+            amps = float(0)
+        UID = line[UID_index]
+        csv_hold_dict[UID] = line
+        UID_list.append(UID)
+        identifier = {"protein": protein, "ampu": ampu, "ampl": ampl, "amps": amps, "uid": UID}
+        data_dictionary[UID] = {"ampu": ampu, "ampl": ampl, "amps": amps, "protein": protein}
+        protein_set.add(protein)
+        peptide_list.append(identifier)
+    return [data_dictionary, protein_set, peptide_list]
