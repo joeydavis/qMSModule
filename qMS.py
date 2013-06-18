@@ -8,6 +8,7 @@
 """
 
 import os
+import csv
 import sys
 import csv
 import urllib2
@@ -23,15 +24,18 @@ sys.setrecursionlimit(10000000)
 [startindex, pep_seq_index, exp_mr_index, csvopen] = [0, 0, 0, ''];
 referencePath = '/home/jhdavis/scripts/python/modules/qMSmodule/'
 
-def readIsoCSV(filename, pulse=False, columns=None, varLab=False):
+def readIsoCSV(filename, columns=None):
     if columns is None:
         columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
                  'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
                  'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
                  'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
                  'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file', 'currentCalc', 'resid']
+        r = csv.reader(open(filename))
+        header = r.next()
+        pulse = 'AMP_S' in header
+        varLab = 'FRC_NX' in header
         if pulse:
-            print "adding AMP_S"
             columns.append('AMP_S')
         if varLab:
             columns.append('FRC_NX')
@@ -268,13 +272,13 @@ def calcValueDF(df, num, den, offset=0.0):
 def boolParse(s):
     return s.upper()=='TRUE'
     
-def preProcessIsoCSV(isoPath, p, genPlots):
-    dataFrame = readIsoCSV(isoPath, pulse=p)
+def preProcessIsoCSV(isoPath, genPlots):
+    dataFrame = readIsoCSV(isoPath)
     dataFrame['currentCalc'] = calcValueDF(dataFrame, ['AMP_U'], ['AMP_U', 'AMP_S'])
     rootPath = '/'.join(isoPath.split('/')[:-1])+'/'
-    fileName = isoPath.split('/')[-1:][0].replace('.', '_res.')
-    dataFrame = calcResidual(rootPath, dataFrame, genPlots)
+    dataFrame = calcResidual(rootPath, dataFrame, genPlots=genPlots)
 
+    fileName = isoPath.split('/')[-1:][0].replace('.', '_res.')
     dataFrame.to_csv(rootPath+fileName, index=False)
     return dataFrame
 
@@ -287,7 +291,6 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             del datPd['offset']
             datPd['residAdj'] = datPd['resid']+(datPd['dat'].median()-datPd['resid'].median())
             datPd['fit'] = datPd['residAdj']+datPd['dat']
-            #del datPd['residAdj']
             calcResid = datPd['resid'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
         except IOError:
             datPd['fit'] = numpy.nan
