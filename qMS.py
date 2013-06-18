@@ -13,14 +13,42 @@ import csv
 import urllib2
 import numpy
 import pylab
+import qMSDefs
+import pandas as pd
 
 #qMS utilities
 
 path = os.getcwd()
 sys.setrecursionlimit(10000000)
 [startindex, pep_seq_index, exp_mr_index, csvopen] = [0, 0, 0, ''];
-ribogenes = ['rpsA', 'rpsB','rpsC','rpsD','rpsE','rpsF','rpsG','rpsH','rpsI','rpsJ','rpsK','rpsL','rpsM','rpsN','rpsO','rpsP','rpsQ','rpsR','rpsS','rpsT','rpsU','sra','rplA','rplB','rplC','rplD','rplE','rplF','rplJ','rplL','rplI','rplK','rplM','rplN','rplO','rplP','rplQ','rplR','rplS','rplT','rplU','rplV','rplW','rplX','rplY','rpmA','rpmB','rpmC','rpmD','rpmE','rpmF','rpmG','rpmH','rpmI','rpmJ']
 referencePath = '/home/jhdavis/scripts/python/modules/qMSmodule/'
+
+def readIsoCSV(filename, pulse=False, columns=None, varLab=False):
+    if columns is None:
+        columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
+                 'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
+                 'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
+                 'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
+                 'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file', 'currentCalc', 'resid']
+        if pulse:
+            print "adding AMP_S"
+            columns.append('AMP_S')
+        if varLab:
+            columns.append('FRC_NX')
+    data = pd.read_csv(filename, usecols=columns)
+    if not pulse:
+        data = data.rename(columns={'AMP_L': 'AMP_S'})
+
+    data['70Spos']=qMSDefs.positionLookup70S[data['protein']].values
+    data['50Spos']=qMSDefs.positionLookup50S[data['protein']].values
+    data['30Spos']=qMSDefs.positionLookup30S[data['protein']].values
+    data['currentPos']=data['70Spos']
+    data['ppmDiff']=data['ppm_n14'] - data['ppm_n15']
+    data['rtDiff']=data['rt_n14'] - data['rt_n15']
+    #data['50Spos'] = qMSDefs.positionLookup50S[data['protein']]
+    #data['30Spos'] = qMSDefs.positionLookup30S[data['protein']]
+    return data
+    
 
 def calcPercent(f, sigfig=2):
     """calcPercent takes a floating point number, rounds it to the number of sigfigs (default 2) and
@@ -228,6 +256,48 @@ def calcValue(data, num, den, offset=0.0):
     valDen = reduce(lambda x,y:x+y, ds)
     return float(valNum)/float(valDen) + offset
 
+def calcValueDF(df, num, den, offset=0.0):
+    nsDF = df[num[0]]
+    dsDF = df[den[0]]
+    for x in num[1:]:
+        nsDF = nsDF + df[x]
+    for x in den[1:]:
+        dsDF = dsDF + df[x]
+    return nsDF/dsDF + offset
+
+def boolParse(s):
+    return s.upper()=='TRUE'
+    
+def preProcessIsoCSV(isoPath, p, genPlots):
+    dataFrame = readIsoCSV(isoPath, pulse=p)
+    dataFrame['currentCalc'] = calcValueDF(dataFrame, ['AMP_U'], ['AMP_U', 'AMP_S'])
+    rootPath = '/'.join(isoPath.split('/')[:-1])+'/'
+    fileName = isoPath.split('/')[-1:][0].replace('.', '_res.')
+    dataFrame = calcResidual(rootPath, dataFrame, genPlots)
+
+    dataFrame.to_csv(rootPath+fileName, index=False)
+    return dataFrame
+
+def calcResidual(datapath, dataFrame, genPlots=False):
+    dataFrame['resid']=0
+    for iso in dataFrame['isofile'].values:
+        datFileName = datapath+iso+'.dat'
+        try:
+            datPd = pd.read_csv(datFileName, names=['offset', 'dat', 'resid'], header=None)
+            del datPd['offset']
+            datPd['residAdj'] = datPd['resid']+(datPd['dat'].median()-datPd['resid'].median())
+            datPd['fit'] = datPd['residAdj']+datPd['dat']
+            #del datPd['residAdj']
+            calcResid = datPd['resid'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
+        except IOError:
+            datPd['fit'] = numpy.nan
+            calcResid = numpy.nan
+        row = dataFrame[dataFrame['isofile']==iso]
+        row['resid'] = calcResid
+        dataFrame.update(row)
+        if genPlots:
+            datPd.to_csv(datapath+iso+'.plots', index=False)
+    return dataFrame
 
 def readCSV(datapath, pulse):
     """readCSV takes a filename (fully specified with datapath) and a boolean if this was a pulsed dataset
@@ -317,7 +387,7 @@ def mergeFiles(fileList, pulse, numerator, denominator, proteinToNormalizeTo=Non
         compositeDataSet = composeDataSets(compositeDataSet, normalizedDataByProtein)
     return compositeDataSet
 
-def makePlotWithDataSets(listOfDataSets, proteinsToPlot, names, colors=None):
+def makePlotWithDataSets(listOfDataSets, proteinsToPlot, names, colors=None, yMax=1.5):
     """makePlotWithDataSets is a helper function to make nice "massage-like" plots of sets of datasets
 
     :param listOfDataSets: a list of datasets to be plotted (each list must be a stats file-like data dictionary)
@@ -326,6 +396,8 @@ def makePlotWithDataSets(listOfDataSets, proteinsToPlot, names, colors=None):
     :type proteinsToPlot: list of strings
     :param name: the names of the datasets
     :type name: list of strings for the dataset names (same order as listOfDataSets)
+    :param yMax: float of maximum y value
+    :type yMax: float
     :returns: an axis with the plotted data
     
     """
@@ -333,8 +405,7 @@ def makePlotWithDataSets(listOfDataSets, proteinsToPlot, names, colors=None):
         colors = ['#ae2221', '#d72c2b', '#e78180', '#25557d', '#3170a4', '#5696cc']
     set1 = listOfDataSets[0]
     offsets = float(len(listOfDataSets)+1)
-    #ax = plotStatsDataStruct(proteinsToPlot, set1, names[0], offset=0.5, markerSize = 15)
-    ax = plotStatsDataStruct(proteinsToPlot, set1, names[0], offset=1.0/offsets, markerSize = 10/float(len(listOfDataSets))+4)
+    ax = plotStatsDataStruct(proteinsToPlot, set1, names[0], offset=1.0/offsets, markerSize = 10/float(len(listOfDataSets))+4, yMax=yMax)
     i = 1
     for dataSet in listOfDataSets[1:]:
         ax = addStatsDataStructToPlot(proteinsToPlot, dataSet, ax, names[i], offset=(1.0/offsets)*(i+1.25), markerSize = 10/float(len(listOfDataSets))+4, color=colors[i])
@@ -389,7 +460,7 @@ def composeDataSets(comp, toAdd):
             comp[i] = toAdd[i]
     return comp
 
-def plotStatsDataStruct(proteins, dataByProtein, name, offset=0.0, markerSize=12, color='#e31a1c', yMax = 1.25):
+def plotStatsDataStruct(proteins, dataByProtein, name, offset=0.0, markerSize=12, color='#e31a1c', yMax = 1.5):
     """plotStatsDataStruct plots the contents of a stats file-like datastructure. proteins to be plotted are 
         listed in the non-redundent list, proteins. The data is in dataByProtein, the name is in in name.
         Decent colors are red (['#ae2221', '#d72c2b', '#e78180']) and blue (['#25557d', '#3170a4', '#5696cc'])
@@ -426,10 +497,10 @@ def plotStatsDataStruct(proteins, dataByProtein, name, offset=0.0, markerSize=12
     pylab.grid(b=True, which='major', color='grey', linestyle='--', axis='y', linewidth=1.5, alpha=0.5)
     pylab.grid(b=True, which='major', color='grey', linestyle='-', axis='x', linewidth=1.5, alpha=0.75)
     ax.plot(xs, ys, 'o', color=color, markersize=markerSize, label=name)
-    pylab.xticks(xAxis, [item[4:] for item in proteins], rotation=45, size=15)
+    pylab.xticks(xAxis, [item for item in proteins], rotation=45, size=15)
     pylab.xlim(1, len(proteins)+1)
     ####################################
-    pylab.yticks([0,0.25,0.50, 0.75], size=15)
+    pylab.yticks([0,yMax/4, yMax/2, 3*yMax/4, yMax], size=15)
     ####################################
     pylab.ylim(0, yMax)
     return ax
@@ -470,6 +541,70 @@ def addStatsDataStructToPlot(proteins, dataByProtein, ax, name, offset=0.0, mark
     ax.plot(xs, ys, 'o', color=color, markersize=markerSize, label=name)
     return ax
 
+def getRPSeqData(ID):
+    """getRPSeqData is a helper function to get the AA and cDNA seqs for ribosomal proteins
+
+    :param ID: string with the geneID
+    :type ID: string
+    :returns:  a list of strings, first is by cDNA, second by AA;
+        
+    """
+    address = 'http://ribosome.med.miyazaki-u.ac.jp/rpg.cgi?id='+ID+'&mode=seq'
+    website = urllib2.urlopen(address)
+    website_html = website.read()
+    cDNAi = website_html.find('>cDNA Sequence')
+    cDNAj = website_html.find('</textarea></td></tr>\n<tr><td align="center" bgcolor="#FFFF80" width="150">Amino Acids Sequence</td><td>')
+    cDNA = website_html[cDNAi+74:cDNAj-1]
+
+    AAj = website_html.find('</textarea></td></tr>\n</table>\n<div class="footer">')
+    AA = website_html[cDNAj+155:AAj]
+    
+    return [cDNA, AA] 
+
+def getRPInfo(numberGenes, baseURL='http://ribosome.med.miyazaki-u.ac.jp/rpg.cgi?mode=gene&id=ECO100'):
+    """getRPInfo generates two dictionaries with relevant ribosomal protein information from a database.
+        It prefers the url listed above, but can be used with other organisms so long as the
+        find commands still work
+
+    :param numberGenes: the number of genes to look for
+    :type numberGenes: int
+    :param baseURL: a string pointing to the base url, defaults to the japanese database
+    :type baseURL: string
+    :returns:  a list of dictionaries, first is by geneNames, second by geneProduct;
+        each dictionary is a dict of dicts with subkeys size, cDNA, AA and either GP or GN (opposite
+        of the base key)
+        
+    """
+    gs = ['01', '02', '03', '04', '05', '06', '07', '08', '09']
+    genes = range(10, numberGenes)
+    genes = gs + genes
+    base = baseURL
+    addys = [base + str(i) for i in genes]
+    rpdictGN = {}
+    rpdictGP = {}
+    for address in addys:
+        website = urllib2.urlopen(address)
+        website_html = website.read()
+        gni = website_html.find('>Gene Name</td><td>')
+        gn = website_html[gni+19:gni+23]
+        gpi = website_html.find('ibosomal protein ')
+        gp = website_html[gpi+17:gpi+20]
+        gp = gp.upper()
+        if gp[-1] == '<':
+            gp = gp[:-1]
+        if gp == 'ITL':
+            gp = 'L9'
+        if gp == 'L7/':
+            gp = 'L7/L12'
+        si = website_html.find('Gene Size [bp]</td><td>')
+        s = website_html[si+23:si+27]
+        if s[-1] == '<':
+            s = s[:-1]
+        cDNA, AA = getRPSeqData(address[-8:])
+        rpdictGN[gn] = {'GP':gp, 'size':s, 'cDNA':cDNA, 'AA':AA}
+        rpdictGP[gp] = {'GN':gn, 'size':s, 'cDNA':cDNA, 'AA':AA}
+    return [rpdictGN, rpdictGP]
+    
 
 #fetches protein sequence from uniprot ID
 def getsequence(uniprot):
