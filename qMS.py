@@ -335,7 +335,7 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             datPd['residAdj'] = datPd['resid']+(datPd['dat'].median()-datPd['resid'].median())
             datPd['fit'] = datPd['residAdj']+datPd['dat']
             calcResid = datPd['resid'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
-        except IOError:
+        except Exception:
             print "Had trouble reading the .dat file for " + datFileName
             datPd['fit'] = numpy.nan
             calcResid = numpy.nan
