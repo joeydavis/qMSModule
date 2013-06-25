@@ -42,9 +42,13 @@ def readIsoCSV(filename, columns=None):
     if not pulse:
         data = data.rename(columns={'AMP_L': 'AMP_S'})
 
+    positionOtherDict = {key:int(value)+1 for value, key in enumerate(sorted(set(data['protein'].values)))}
+    positionLookupOther = pd.Series(positionOtherDict)
     data['70Spos']=qMSDefs.positionLookup70S[data['protein']].values
     data['50Spos']=qMSDefs.positionLookup50S[data['protein']].values
     data['30Spos']=qMSDefs.positionLookup30S[data['protein']].values
+    data['otherpos']=positionLookupOther[data['protein']].values
+    
     data['currentPos']=data['70Spos']
     data['ppmDiff']=data['ppm_n14'] - data['ppm_n15']
     data['rtDiff']=data['rt_n14'] - data['rt_n15']
@@ -314,7 +318,7 @@ def calcValueDF(df, num, den, offset=0.0):
 
 def boolParse(s):
     return s.upper()=='TRUE'
-    
+
 def preProcessIsoCSV(isoPath, genPlots):
     dataFrame = readIsoCSV(isoPath)
     dataFrame['currentCalc'] = calcValueDF(dataFrame, ['AMP_U'], ['AMP_U', 'AMP_S'])
@@ -334,11 +338,13 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             del datPd['offset']
             datPd['residAdj'] = datPd['resid']+(datPd['dat'].median()-datPd['resid'].median())
             datPd['fit'] = datPd['residAdj']+datPd['dat']
-            calcResid = datPd['resid'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
-        except Exception:
-            print "Had trouble reading the .dat file for " + datFileName
-            datPd['fit'] = numpy.nan
-            calcResid = numpy.nan
+            calcResid = datPd['residAdj'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
+        except (IOError, TypeError) as e:
+            print "Error " + e.message + " in " + datFileName
+            sys.stdout.flush()
+            datPd['fit'] = 666
+            datPd['residAdj'] = 666
+            calcResid = 666666
         row = dataFrame[dataFrame['isofile']==iso]
         row['resid'] = calcResid
         dataFrame.update(row)
