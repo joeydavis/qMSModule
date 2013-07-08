@@ -6,6 +6,49 @@ Created on Wed Jun 26 21:29:59 2013
 """
 
 '''DEPRECATED FUNCTIONS'''
+def _calculateStatsFile(dataFrame, protein_set, numerator, denominator, normalization=1.0):
+    """calculateStatsFile takes a dataFrame and a protein_set, a numerator, a denominator,
+        and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)
+
+    :param data_dictionary: a dictionary of dictionaries, must contain uid keys for each peptide fit
+        each element in the dict is a dict with the keys protein, ampu, ampl, amps
+    :type filename: dictionary or dictionaries
+    :param protein_set: a set of protein names (must be the same names as given in the key protein in the subdict listed above)
+    :type protein_set: list
+    :param numerator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
+    :type numerator: list of strings
+    :param denominator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
+    :type denominator: list of strings
+    :param normalization: a float normalization factor if you want to scale all of the values uniformly
+    :type pnormalization: float
+    :returns:  a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).
+        This leads to a dictionary bearing keys "vals", "nvals", "loc", "flab" which are a list of values,
+        the size of that list, the std dev of that list, the mean of that list
+
+    """
+    dataByProtein = {}
+    for p in protein_set:
+        dataByProtein[p] = {"flab" : -1, "loc" : -1, "nvals" : 0, "vals" : []}
+        
+    for uid in data_dictionary:
+        parentProtein = data_dictionary[uid]["protein"]
+
+        valNum = 0
+        for i in numerator:
+            valNum = valNum + data_dictionary[uid][i]
+        valDen = 0
+        for i in denominator:
+            valDen = valDen + data_dictionary[uid][i]
+
+        value = float(valNum)/float(valDen)/normalization
+        dataByProtein[parentProtein]["vals"].append(value)
+        dataByProtein[parentProtein]["nvals"] = dataByProtein[parentProtein]["nvals"] + 1
+        
+    for p in protein_set:
+        dataByProtein[p]["loc"] = numpy.std(dataByProtein[p]["vals"])
+        dataByProtein[p]["flab"] = numpy.mean(dataByProtein[p]["vals"])
+        
+    return dataByProtein
 
 def _getProtMedValue(statsFileDict, proteinName):
     """getProtMedValue gets the median value of proteins values from a StatsFile-style data structure
@@ -42,31 +85,6 @@ def _mergeFiles(fileList, pulse, numerator, denominator, proteinToNormalizeTo=No
         normalizedDataByProtein = getInfoToPlotStats(datapath, pulse, numerator, denominator, proteinToNormalizeTo)
         compositeDataSet = composeDataSets(compositeDataSet, normalizedDataByProtein)
     return compositeDataSet
-
-def _makePlotWithDataSets(listOfDataSets, proteinsToPlot, names, colors=None, yMax=1.5):
-    """makePlotWithDataSets is a helper function to make nice "massage-like" plots of sets of datasets
-
-    :param listOfDataSets: a list of datasets to be plotted (each list must be a stats file-like data dictionary)
-    :type listOfDataSets: a list of stats file -like datasets
-    :param proteinsToPlot: a list of the proteins to be plotted (list of strings that are keys to the datasets)
-    :type proteinsToPlot: list of strings
-    :param name: the names of the datasets
-    :type name: list of strings for the dataset names (same order as listOfDataSets)
-    :param yMax: float of maximum y value
-    :type yMax: float
-    :returns: an axis with the plotted data
-    
-    """
-    if colors is None:
-        colors = ['#ae2221', '#d72c2b', '#e78180', '#25557d', '#3170a4', '#5696cc']
-    set1 = listOfDataSets[0]
-    offsets = float(len(listOfDataSets)+1)
-    ax = plotStatsDataStruct(proteinsToPlot, set1, names[0], offset=1.0/offsets, markerSize = 10/float(len(listOfDataSets))+4, yMax=yMax)
-    i = 1
-    for dataSet in listOfDataSets[1:]:
-        ax = addStatsDataStructToPlot(proteinsToPlot, dataSet, ax, names[i], offset=(1.0/offsets)*(i+1.25), markerSize = 10/float(len(listOfDataSets))+4, color=colors[i])
-        i = i +1
-    return ax
 
 def _getInfoToPlotStats(datapath, pulse, numerator, denominator, proteinToNormalizeTo=None):
     """getInfoToPlotStats is a helper funciton that reads a csv file and returns a normalized
@@ -115,87 +133,6 @@ def _composeDataSets(comp, toAdd):
         else:
             comp[i] = toAdd[i]
     return comp
-
-def _plotStatsDataStruct(proteins, dataByProtein, name, offset=0.0, markerSize=12, color='#e31a1c', yMax = 1.5):
-    """plotStatsDataStruct plots the contents of a stats file-like datastructure. proteins to be plotted are 
-        listed in the non-redundent list, proteins. The data is in dataByProtein, the name is in in name.
-        Decent colors are red (['#ae2221', '#d72c2b', '#e78180']) and blue (['#25557d', '#3170a4', '#5696cc'])
-
-    :param proteins: a non-redudent list of the protein names to use (should be the IDs in dataByProtein)
-    :type proteins: list
-    :param dataByProtein: a dictionary (easily created by calculateStatsFile), must contain 'vals' for each p in proteins
-    :type dataByProtein: dictionary
-    :param name: the name of the dataset
-    :type name: string
-    :param offset: where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)
-    :type offset: float
-    :param markerSize: size of the dots (default = 12)
-    :type markerSize: int
-    :param color: color for the dataset (default #e31a1c)
-    :type color: color
-    :param yMax: the max value for the y axis
-    :type yMax: float
-    :returns:  a pyplot axis with the data plotted
-        
-    """
-
-    xAxis = range(1,len(proteins)+1)
-    fig = pylab.figure(figsize=(22,5))
-    ax = fig.add_subplot(111)
-    xs = []
-    ys = []
-    for x in xAxis:
-        p = proteins[x-1]
-        if p in dataByProtein.keys():
-            for v in dataByProtein[p]["vals"]:
-                xs.append(x+offset)
-                ys.append(v)
-    pylab.grid(b=True, which='major', color='grey', linestyle='--', axis='y', linewidth=1.5, alpha=0.5)
-    pylab.grid(b=True, which='major', color='grey', linestyle='-', axis='x', linewidth=1.5, alpha=0.75)
-    ax.plot(xs, ys, 'o', color=color, markersize=markerSize, label=name)
-    pylab.xticks(xAxis, [item for item in proteins], rotation=45, size=15)
-    pylab.xlim(1, len(proteins)+1)
-    ####################################
-    pylab.yticks([0,yMax/4, yMax/2, 3*yMax/4, yMax], size=15)
-    ####################################
-    pylab.ylim(0, yMax)
-    return ax
-    
-def _addStatsDataStructToPlot(proteins, dataByProtein, ax, name, offset=0.0, markerSize=12, color='#377db8'):
-    """addStatsDataStructToPlot adds the contents of a stats file-like datastructure to an existing plot. proteins to be plotted are 
-        listed in the non-redundent list, proteins. THESE MUST BE THE SAME PROTEINS GIVEN IN THE FIRST CALL TO PLOTSTATSDATASTRUCT
-        The data is in dataByProtein, the axis to add to is in ax, the name is in in name.
-        Decent colors are red (['#ae2221', '#d72c2b', '#e78180']) and blue (['#25557d', '#3170a4', '#5696cc'])
-
-    :param proteins: a non-redudent list of the protein names to use (should be the IDs in dataByProtein)
-    :type proteins: list
-    :param dataByProtein: a dictionary (easily created by calculateStatsFile), must contain 'vals' for each p in proteins
-    :type dataByProtein: dictionary
-    :param ax: the pyplot axis to modify
-    :type ax: pyplot axis
-    :param name: the name of the dataset
-    :type name: string
-    :param offset: where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)
-    :type offset: float
-    :param markerSize: size of the dots (default = 12)
-    :type markerSize: int
-    :param color: color for the dataset (default #e31a1c)
-    :type color: color
-    :returns:  a pyplot axis with the data plotted
-        
-    """
-
-    xAxis = range(1,len(proteins)+1)
-    xs = []
-    ys = []
-    for x in xAxis:
-        p = proteins[x-1]
-        if p in dataByProtein.keys():
-            for v in dataByProtein[p]["vals"]:
-                xs.append(x+offset)
-                ys.append(v)
-    ax.plot(xs, ys, 'o', color=color, markersize=markerSize, label=name)
-    return ax
     
 def _readCSV(datapath, pulse):
     """readCSV takes a filename (fully specified with datapath) and a boolean if this was a pulsed dataset

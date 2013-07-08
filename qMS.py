@@ -3,7 +3,7 @@
    :platform: Any
    :synopsis: A collection of functions for qMS data processing and analysis
 
-.. moduleauthor:: Josh Silverman <josh.silverman@gmail.com>; Joey Davis <joeydavis@gmail.com>
+.. moduleauthor:: Joey Davis <joeydavis@gmail.com>; Josh Silverman <josh.silverman@gmail.com>
 
 """
 
@@ -12,7 +12,6 @@ import csv
 import sys
 import urllib2
 import numpy
-import pylab
 import qMSDefs
 import pandas as pd
 
@@ -24,6 +23,18 @@ sys.setrecursionlimit(10000000)
 referencePath = '/home/jhdavis/scripts/python/modules/qMSmodule/'
 
 def readIsoCSV(filename, columns=None):
+    """readIsoCSV takes a filename pointing to a _iso.csv file. It returns the calculated
+        pandas dataFrame. Optional argument columns can be used to specify specific column headers
+
+    :param filename: full path to the _iso.csv file
+    :type filename: string
+    :param columns: optional list of strings with the columns to incorporate into the dataFrame
+    :type columns: list of strings
+    :returns:  a pandas dataFrame with the relevant contents of the _iso.csv. Function
+        automatically determines if the dataset is a pulse (bears AMP_S) or variable labeling (bears FRC_NX)
+
+    """
+
     if columns is None:
         columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
                  'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
@@ -52,10 +63,108 @@ def readIsoCSV(filename, columns=None):
     data['currentPos']=data['70Spos']
     data['ppmDiff']=data['ppm_n14'] - data['ppm_n15']
     data['rtDiff']=data['rt_n14'] - data['rt_n15']
-    #data['50Spos'] = qMSDefs.positionLookup50S[data['protein']]
-    #data['30Spos'] = qMSDefs.positionLookup30S[data['protein']]
     return data
+
+def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0):
+    """calcStatsDict takes a dataFrame and , a numerator, a denominator, an offset (applied to value first)
+        and a normalization factor (scaling factor applied last). It returns a dictionary with keys of 
+        protein names and values as a numpy array of calculated values based on numerator and denominator keys.
+
+    :param dataFrame: a pandas dataFrame as calculated from an _iso.csv file (qMS.readIsoCSV)
+    :type dataFrame: pandas dataFrame
+    :param numerator: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type numerator: list of strings
+    :param denominator: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type denominator: list of strings
+    :param normalization: a float normalization factor if you want to scale all of the values uniformly (applied last)
+    :type normalization: float
+    :param offset: a float offset factor if you want to offset the values (applied first)
+    :type offset: float
+    :returns:  a dictionary of numpy arrays. First key is the protein name (one of those given in protein_set).
+        This leads to a numpy array with the list of values
+
+    """
+    ps = list(set(dataFrame['protein'].values))
+    ps.sort()
+    return {p:calcValue(dataFrame[dataFrame['protein']==p], numerator, denominator, offset=offset).values*normalization for p in ps}
+
+def multiStatsDict(isoFileList, num, den, normalization=1.0, offset=0.0, normProtein=None):
+    """multiStatsDict takes a list of _iso.csv files and a list of nums and dens.
+        It returns a dict of dict (first key is the file name) - this leads to a statsDict
+        that is keyed by protein names. All of the statsDicts contain a full compliment of keys 
+        (based on the file list), with empty numpy arrays if there were no values in the original
+        dataset
+
+    :param isoFileList: a list of file paths (full paths with entire file name)
+    :type isoFileList: a list of strings
+    :param num: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type num: list of strings
+    :param den: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type den: list of strings
+    :param normalization: a float normalization factor if you want to scale all of the values uniformly
+    :type normalization: float
+    :param offset: a float offset factor if you want to alter the values uniformly
+    :type offset: float
+    :param normProtein: string of the protein to normalize to (will be to the median)
+    :type normProtein: string
+    :returns:  a dictionary of of dicationaries of numpy arrays. First key is the file name, this leads
+        to a dictionary where the first key is the protein name (one of those given in protein_set).
+        This leads to a numpy array with the list of values
+
+    """
+    allPs = calcStatsDict(readIsoCSV(isoFileList[0]), num, den)
+    fileStatsDict = dict()
+    for f in isoFileList:
+        fileStatsDict[f] = calcStatsDict(readIsoCSV(f), num, den, normalization=normalization, offset=offset)
+        if not normProtein is None:
+            normValue = 1/numpy.median(fileStatsDict[f][normProtein])
+            fileStatsDict[f] = calcStatsDict(readIsoCSV(f), num, den, normalization=normValue, offset=offset)
+        
+    for f in isoFileList[1:]:
+        allPs = appendKeys(allPs, fileStatsDict[f])
     
+    for f in isoFileList:
+        fileStatsDict[f] = appendKeys(fileStatsDict[f], allPs)
+    
+    return fileStatsDict
+
+def mergeFiles(fileList, numerator, denominator, normProtein=None):
+    """mergeFiles takes a list of _iso.csv files and returns a merged statsFile data dictionary structure
+
+    :param fileList: a list of strings with the full path for reach .csv file
+    :type fileList: list (of strings)
+    :param numerator: a list of strings for what elements in the numerator (ampu, ampl, amps)
+    :type numerator: list of strings
+    :param denominator: a list of strings for what elements in the numerator (ampu, ampl, amps)
+    :type denominator: list of strings
+    :param proteinToNormalizeTo: string of what protein to normalize to (defaults to None)
+    :type proteinToNormalizeTo: strings
+    :returns:  the median value in the 'vals' field for that protein
+    
+    """
+
+    splitDict = multiStatsDict(fileList, numerator,denominator, normProtein=normProtein)
+    mergedDict = splitDict[sorted(splitDict.keys())[0]]
+    for k in sorted(splitDict.keys())[1:]:
+        cd = splitDict[k]
+        for p in sorted(cd.keys()):
+            mergedDict[p] = numpy.concatenate((mergedDict[p],cd[p]))
+    return mergedDict
+    
+
+
+def getProtMedValue(statsFileDict, proteinName):
+    """getProtMedValue gets the median value of proteins values from a StatsFile-style dictionary
+
+    :param statsFileDict: a statsFile-style dictionary (can be generated by calcStatsDict 
+        (which takes a pandas dataFrame from readIsoCSV))
+    :type statsFileDict: dictionary (statsFilte type (needs keys of protein names (strings) and values of numpy arrays))
+    :param proteinName: name of the protein to get the med from
+    :type proteinName: string
+    :returns:  the median value
+    
+    """
+    return numpy.median(statsFileDict[proteinName])
 
 def calcPercent(f, sigfig=2):
     """calcPercent takes a floating point number, rounds it to the number of sigfigs (default 2) and
@@ -129,199 +238,87 @@ def growthRate(doublingTime):
     
     return numpy.log(2)/float(doublingTime)
 
-def getMedian(dataByProtein, proteinName):
-    """getMediantakes the outputs of calculateStatsFile (a dataByProteinDictionary structure), and a protein name,
-        it returns the median value of that protein
+def addBlankKey(d, k):
+    """addBlankKey takes a stats dict and a key. It checks if the key in in the stats file,
+        if it is not, it make a new dict entry with the key k and the value as an empty numpy array
 
-    :param dataByProtein: a dictionary datastructure bearing keys of protein names, with values of dictionaries bearing
-        keys of vals, nvals, loc, flab
-    :type dataByProtein: a calculateStatsFiles dictionary of dictionaries
-    :param proteinName: a string of the protein to get the median value of 
-    :type proteinName: string
-    :returns:  a float of the median value in the datastructure for that protein
-
-    """
-    return float(numpy.median(dataByProtein[proteinName]["vals"]))
-
-def calculateStatsFileDF(dataFrame, protein_set, numerator, denominator, normalization=1.0):
-    """calculateStatsFile takes a dataFrame and a protein_set, a numerator, a denominator,
-        and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)
-
-    :param data_dictionary: a dictionary of dictionaries, must contain uid keys for each peptide fit
-        each element in the dict is a dict with the keys protein, ampu, ampl, amps
-    :type filename: dictionary or dictionaries
-    :param protein_set: a set of protein names (must be the same names as given in the key protein in the subdict listed above)
-    :type protein_set: list
-    :param numerator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
-    :type numerator: list of strings
-    :param denominator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
-    :type denominator: list of strings
-    :param normalization: a float normalization factor if you want to scale all of the values uniformly
-    :type pnormalization: float
-    :returns:  a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).
-        This leads to a dictionary bearing keys "vals", "nvals", "loc", "flab" which are a list of values,
-        the size of that list, the std dev of that list, the mean of that list
+    :param d: statsDictionary
+    :type d: a dict of numpy arrays - keyed by protein names
+    :param k: a string name for the key to check
+    :type k: string
+    :returns:  statsDictionary (a dictionary of numpy arrays). First key is the protein name (one of those given in protein_set).
+        This leads to a numpy array with the list of values
 
     """
-    dataByProtein = {}
-    for p in protein_set:
-        dataByProtein[p] = {"flab" : -1, "loc" : -1, "nvals" : 0, "vals" : []}
-        
-    for uid in data_dictionary:
-        parentProtein = data_dictionary[uid]["protein"]
-
-        valNum = 0
-        for i in numerator:
-            valNum = valNum + data_dictionary[uid][i]
-        valDen = 0
-        for i in denominator:
-            valDen = valDen + data_dictionary[uid][i]
-
-        value = float(valNum)/float(valDen)/normalization
-        dataByProtein[parentProtein]["vals"].append(value)
-        dataByProtein[parentProtein]["nvals"] = dataByProtein[parentProtein]["nvals"] + 1
-        
-    for p in protein_set:
-        dataByProtein[p]["loc"] = numpy.std(dataByProtein[p]["vals"])
-        dataByProtein[p]["flab"] = numpy.mean(dataByProtein[p]["vals"])
-        
-    return dataByProtein
-
-def calculateStatsFile(data_dictionary, protein_set, numerator, denominator, normalization=1.0):
-    """calculateStatsFile takes the outputs of readCSV (data_dictionary, protein_set), a numerator, a denominator,
-        and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)
-
-    :param data_dictionary: a dictionary of dictionaries, must contain uid keys for each peptide fit
-        each element in the dict is a dict with the keys protein, ampu, ampl, amps
-    :type filename: dictionary or dictionaries
-    :param protein_set: a set of protein names (must be the same names as given in the key protein in the subdict listed above)
-    :type protein_set: list
-    :param numerator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
-    :type numerator: list of strings
-    :param denominator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
-    :type denominator: list of strings
-    :param normalization: a float normalization factor if you want to scale all of the values uniformly
-    :type pnormalization: float
-    :returns:  a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).
-        This leads to a dictionary bearing keys "vals", "nvals", "loc", "flab" which are a list of values,
-        the size of that list, the std dev of that list, the mean of that list
-
-    """
-    dataByProtein = {}
-    for p in protein_set:
-        dataByProtein[p] = {"flab" : -1, "loc" : -1, "nvals" : 0, "vals" : []}
-        
-    for uid in data_dictionary:
-        parentProtein = data_dictionary[uid]["protein"]
-
-        valNum = 0
-        for i in numerator:
-            valNum = valNum + data_dictionary[uid][i]
-        valDen = 0
-        for i in denominator:
-            valDen = valDen + data_dictionary[uid][i]
-
-        value = float(valNum)/float(valDen)/normalization
-        dataByProtein[parentProtein]["vals"].append(value)
-        dataByProtein[parentProtein]["nvals"] = dataByProtein[parentProtein]["nvals"] + 1
-        
-    for p in protein_set:
-        dataByProtein[p]["loc"] = numpy.std(dataByProtein[p]["vals"])
-        dataByProtein[p]["flab"] = numpy.mean(dataByProtein[p]["vals"])
-        
-    return dataByProtein
-
-def outputStatsFile(data_dictionary, protein_set, filePrefix, numerator, denominator):
-    """outputStatsFile takes the outputs of readCSV (data_dictionary, protein_set), a numerator, a denominator,
-        and a normalization factor. It returns the information necessary for a stats file (vals, nvals, loc, flab)
-
-    :param data_dictionary: a dictionary of dictionaries, must contain uid keys for each peptide fit
-        each element in the dict is a dict with the keys protein, ampu, ampl, amps
-    :type filename: dictionary or dictionaries
-    :param protein_set: a set of protein names (must be the same names as given in the key protein in the subdict listed above)
-    :type protein_set: list
-    :param numerator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
-    :type numerator: list of strings
-    :param denominator: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
-    :type denominator: list of strings
-    :param normalization: a float normalization factor if you want to scale all of the values uniformly
-    :type normalization: float
-    :returns:  a dictionary of dictionaries. First key is the protein name (one of those given in protein_set).
-        This leads to a dictionary bearing keys "vals", "nvals", "loc", "flab" which are a list of values,
-        the size of that list, the std dev of that list, the mean of that list
-   
-   """
+    if not d.has_key(k):
+        d[k]=numpy.array([])
+    return d
     
-    fileSuffix = "-"
-    for i in numerator:
-        fileSuffix = fileSuffix+str(i)+"_p_"
-    fileSuffix = fileSuffix[:-3]+"_o_"
-    for i in denominator:
-        fileSuffix = fileSuffix+str(i)+"_p_"
-    fileName = filePrefix+fileSuffix[:-3]+".stats"
-    outfile = open(fileName, 'w')
-    
-    outfile.write("Protein flab +\\- loc nval vals\n")
+def appendKeys(d1, d2):
+    """appendKeys a helper function that adds all the keys in d2 to d1 (making empty entries into d1)
 
-    dataByProtein = {}
-    for p in protein_set:
-        dataByProtein[p] = {"flab" : -1, "loc" : -1, "nvals" : 0, "vals" : []}
-        
-    for uid in data_dictionary:
-        parentProtein = data_dictionary[uid]['protein']
-        value = calcValue(data_dictionary[uid], numerator, denominator)
-        dataByProtein[parentProtein]["vals"].append(value)
-        dataByProtein[parentProtein]["nvals"] = dataByProtein[parentProtein]["nvals"] + 1
-            
-    ordered = list(protein_set)
-    ordered.sort()
-    locIter = 1
-    for p in ordered:
-        outString = str(p) + " " + str(numpy.mean(dataByProtein[p]["vals"]))[:6] + " " + \
-                    str(numpy.std(dataByProtein[p]["vals"]))[:6] + " " + str(locIter) + " " + \
-                    str(dataByProtein[p]["nvals"]) + " "
-        for v in dataByProtein[p]["vals"]:
-            outString = outString + str(v)[:6] + " "    
-        outString = outString[:-1] + "\n"
-        outfile.write(outString)
-    outfile.close()
+    :param d1: statsDictionary
+    :type d1: a dict of numpy arrays - keyed by protein names
+    :param d2: statsDictionary
+    :type d2: a dict of numpy arrays - keyed by protein names
+    :returns:  statsDictionary (a dictionary of numpy arrays). First key is the protein name (one of those given in protein_set).
+        This leads to a numpy array with the list of values
 
-def calcValue(data, num, den, offset=0.0):
-    """calcVale takes a data dictionary bearing the keys ampu, ampl, and (optionally) amps and calcultes
-        the ratio of the num/den (specified as lists of the ampu, ampl, amps above)
+    """
 
-    :param data: a dictionary with minimal keys for the ampu, ampl, amps listed in num, den
-    :type data: a dict
-    :param num: a list of the strings in the numerator (ampu, ampl, amps)
-    :type den: list
-    :param den: a list of strings identifying the numerator (must be ampu, ampl, and/or amps)
+    for k in d2:
+        d1 = addBlankKey(d1, k)
+    return d1
+
+def calcValue(df, num, den, offset=0.0):
+    """calcVale takes a pandas dataFrame bearing the keys to be used and calculates
+        the ratio of the num/den (specified as lists of the keys - AMP_U, AMP_L, AMP_S)
+
+    :param df: pandas dataFrame with the information from an _iso.csv
+    :type df: pandas dataFrame
+    :param num: a list of the strings in the numerator (AMP_U, AMP_L, AMP_S)
+    :type den: list of strings
+    :param den: a list of strings identifying the denominator (AMP_U, AMP_L, AMP_S)
     :type den: list of strings
     :param offset: an optional offset float to move the point up or down
     :type offset: float
     :returns:  a float of the [(sum of the nums) divided by the (sum of the dens)] + the offset
     
     """
-    ns = [data[x] for x in num]
-    valNum = reduce(lambda x,y:x+y, ns)
-    ds = [data[x] for x in den]
-    valDen = reduce(lambda x,y:x+y, ds)
-    return float(valNum)/float(valDen) + offset
-
-def calcValueDF(df, num, den, offset=0.0):
     nsDF = df[num[0]]
     dsDF = df[den[0]]
     for x in num[1:]:
         nsDF = nsDF + df[x]
     for x in den[1:]:
         dsDF = dsDF + df[x]
-    return nsDF/dsDF + offset
+    return (nsDF/dsDF + offset)
 
 def boolParse(s):
+    """boolParse takes a string and returns a bool. Any capitilization of "true" results in True
+        all other strings result in False
+
+    :param s: string to process
+    :type s: string
+    :returns:  bool (see description)
+    
+    """
     return s.upper()=='TRUE'
 
 def preProcessIsoCSV(isoPath, genPlots):
+    """preProcessIsoCSV processes an _iso.csv and _plots directory to append the 
+        residual column as well as a "currentCalc" column showing protein levels.
+        Function is a helper that calls calcResidual
+
+    :param isoPath: full path to the _iso.csv file
+    :type isoPath: string
+    :param genPlots: bool indicating if .plots files should be generated
+    :type genPlots: list of strings
+    :returns: a complteted dataFrame with resids and currentCalc columns. Has
+        externality of generating .plots files in the _peaks directory if genPlots is true
+    
+    """
     dataFrame = readIsoCSV(isoPath)
-    dataFrame['currentCalc'] = calcValueDF(dataFrame, ['AMP_U'], ['AMP_U', 'AMP_S'])
+    dataFrame['currentCalc'] = calcValue(dataFrame, ['AMP_U'], ['AMP_U', 'AMP_S'])
     rootPath = '/'.join(isoPath.split('/')[:-1])+'/'
     dataFrame = calcResidual(rootPath, dataFrame, genPlots=genPlots)
 
@@ -329,7 +326,41 @@ def preProcessIsoCSV(isoPath, genPlots):
     dataFrame.to_csv(rootPath+fileName, index=False)
     return dataFrame
 
+def cleanPlotsDir(path, extensions=['.newcon', '.fit', '.png']):
+    """cleanPlotsDir executes a system command to remove files from a _peaks directory
+
+    :param path: full path to the _peaks directory (no trailing /)
+    :type path: path
+    :param extensions: list of strings with extension types
+    :type extensions: list of strings
+    :returns: no return, outputs the command issued and any output from the command.
+        Has externalities of deleting all *.ext files in the path directory
+    
+    """
+    for ext in extensions:
+        command = 'rm -rf ' + path + '/*' + ext
+        print command
+        output = os.popen(command).read()
+        print output
+
 def calcResidual(datapath, dataFrame, genPlots=False):
+    """calcResidual takes a path to a _peaks directory and a pandas dataFrame containing the contents
+        of the _iso.csv file. It appends a column to the dataFrame with the calculated residual
+        (the difference between the fit and data in a .dat file) for each peptide.
+        Optional paramter genPlots will also generate .plots files that can be used to plot the datasets
+
+    :param datapath: A string with the full path to the _plots directory
+    :type datapath: string
+    :param dataFrame: A pandas dataframe with ['isofile'] at the minimum (must point to the .dat files in 
+        the _plots directory)
+    :type dataFrame: pandas dataframe
+    :param genPlots: Optional boolean telling function if it should write .plots files
+    :type genPlots: boolean
+
+    :returns:  the dataFrame modified to include the 'resid' column. .Dats that cause any errors
+        are given fits with constant 666 and resids with constant 666.
+    
+    """
     dataFrame['resid']=0
     for iso in dataFrame['isofile'].values:
         datFileName = datapath+iso+'.dat'
@@ -344,203 +375,13 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             sys.stdout.flush()
             datPd['fit'] = 666
             datPd['residAdj'] = 666
-            calcResid = 666666
+            calcResid = 666
         row = dataFrame[dataFrame['isofile']==iso]
         row['resid'] = calcResid
         dataFrame.update(row)
         if genPlots:
             datPd.to_csv(datapath+iso+'.plots', index=False)
     return dataFrame
-
-def getProtMedValue(statsFileDict, proteinName):
-    """getProtMedValue gets the median value of proteins values from a StatsFile-style data structure
-
-    :param statsFileDict: a statsFile-style dictionary (can be generated by calculateStatsFile 
-        (which takes a data_dictionary from readCSV))
-    :type statsFileDict: dictionary (statsFilte type (needs keys of protein names (strings) and second dict of 'vals'))
-    :param proteinName: name of the protein to get the med from
-    :type proteinName: string
-    :returns:  the median value in the 'vals' field for that protein
-    
-    """
-    return numpy.median(numpy.array(statsFileDict[proteinName]['vals']))
-
-def mergeFiles(fileList, pulse, numerator, denominator, proteinToNormalizeTo=None):
-    """mergeFiles takes a list of csv files and returns a merged statsFile data dictionary structure
-
-    :param fileList: a list of strings with the full path for reach .csv file
-    :type fileList: list (of strings)
-    :param pulse: a boolean of whether the datasetes are pulsed
-    :type pulse: boolean
-    :param numerator: a list of strings for what elements in the numerator (ampu, ampl, amps)
-    :type numerator: list of strings
-    :param denominator: a list of strings for what elements in the numerator (ampu, ampl, amps)
-    :type denominator: list of strings
-    :param proteinToNormalizeTo: string of what protein to normalize to (defaults to None)
-    :type proteinToNormalizeTo: strings
-    :returns:  the median value in the 'vals' field for that protein
-    
-    """
-    normalizedDataByProtein = getInfoToPlotStats(fileList[0], pulse, numerator, denominator, proteinToNormalizeTo)
-    compositeDataSet = normalizedDataByProtein
-    for datapath in fileList[1:]:
-        normalizedDataByProtein = getInfoToPlotStats(datapath, pulse, numerator, denominator, proteinToNormalizeTo)
-        compositeDataSet = composeDataSets(compositeDataSet, normalizedDataByProtein)
-    return compositeDataSet
-
-def makePlotWithDataSets(listOfDataSets, proteinsToPlot, names, colors=None, yMax=1.5):
-    """makePlotWithDataSets is a helper function to make nice "massage-like" plots of sets of datasets
-
-    :param listOfDataSets: a list of datasets to be plotted (each list must be a stats file-like data dictionary)
-    :type listOfDataSets: a list of stats file -like datasets
-    :param proteinsToPlot: a list of the proteins to be plotted (list of strings that are keys to the datasets)
-    :type proteinsToPlot: list of strings
-    :param name: the names of the datasets
-    :type name: list of strings for the dataset names (same order as listOfDataSets)
-    :param yMax: float of maximum y value
-    :type yMax: float
-    :returns: an axis with the plotted data
-    
-    """
-    if colors is None:
-        colors = ['#ae2221', '#d72c2b', '#e78180', '#25557d', '#3170a4', '#5696cc']
-    set1 = listOfDataSets[0]
-    offsets = float(len(listOfDataSets)+1)
-    ax = plotStatsDataStruct(proteinsToPlot, set1, names[0], offset=1.0/offsets, markerSize = 10/float(len(listOfDataSets))+4, yMax=yMax)
-    i = 1
-    for dataSet in listOfDataSets[1:]:
-        ax = addStatsDataStructToPlot(proteinsToPlot, dataSet, ax, names[i], offset=(1.0/offsets)*(i+1.25), markerSize = 10/float(len(listOfDataSets))+4, color=colors[i])
-        i = i +1
-    return ax
-
-def getInfoToPlotStats(datapath, pulse, numerator, denominator, proteinToNormalizeTo=None):
-    """getInfoToPlotStats is a helper funciton that reads a csv file and returns a normalized
-        statsfiledictionary
-
-    :param datapath: the full path to the .csv file
-    :type datapath: string
-    :param pulse: a bool if the dataset has been pulsed (does the csv have all of ampu, ampl, amps or just ampu, ampl)
-    :type pulse: boolean
-    :param numerator: a list of the items in the numerator (can be ampu, ampl, amps or any mix)
-    :type numerator: list of strings
-    :param denominator: a list of the items in the numerator (can be ampu, ampl, amps or any mix)
-    :type denominator: list of strings
-    :param proteinToNormalizeTo: the protein to normalize to (defaults to None)
-    :type proteinToNormalizeTo: string
-    :returns: a stats dictionary data structure that can then be easily plotted/manipulated
-    
-    """
-    
-    [data_dictionary, protein_set, peptide_list] = readCSV(datapath, pulse)
-    dataByProtein = calculateStatsFile(data_dictionary, protein_set, numerator, denominator, normalization=1.0)
-    if proteinToNormalizeTo is None:
-        return dataByProtein
-    else:
-        normMed = getProtMedValue(dataByProtein, proteinToNormalizeTo)
-        normalizedDataByProtein = calculateStatsFile(data_dictionary, protein_set, numerator, denominator, normalization=normMed)
-        return normalizedDataByProtein
-
-def composeDataSets(comp, toAdd):
-    """composeDataSets takes two StatsFileDatasets and composes them to return one dataset
-
-    :param comp: the StatsFileDatasturct to add to
-    :type comp: statsFile dictionary of dictionaries (needs the 'vals' keys at least)
-    :param toAdd: the StatsFileDatasturct to add 
-    :type toAdd: statsFile dictionary of dictionaries (needs the 'vals' keys at least)
-    :returns: the composed statsfileDataStruct
-    
-    """
-    proteinsToAdd = toAdd.keys()
-    for i in proteinsToAdd:
-        if i in comp.keys():
-            comp[i]["vals"] = comp[i]["vals"] + toAdd[i]["vals"]
-            comp[i]["nvals"] = len(comp[i]["vals"])
-            comp[i]["loc"] = numpy.std(comp[i]["vals"])
-            comp[i]["flab"] = numpy.mean(comp[i]["vals"])
-        else:
-            comp[i] = toAdd[i]
-    return comp
-
-def plotStatsDataStruct(proteins, dataByProtein, name, offset=0.0, markerSize=12, color='#e31a1c', yMax = 1.5):
-    """plotStatsDataStruct plots the contents of a stats file-like datastructure. proteins to be plotted are 
-        listed in the non-redundent list, proteins. The data is in dataByProtein, the name is in in name.
-        Decent colors are red (['#ae2221', '#d72c2b', '#e78180']) and blue (['#25557d', '#3170a4', '#5696cc'])
-
-    :param proteins: a non-redudent list of the protein names to use (should be the IDs in dataByProtein)
-    :type proteins: list
-    :param dataByProtein: a dictionary (easily created by calculateStatsFile), must contain 'vals' for each p in proteins
-    :type dataByProtein: dictionary
-    :param name: the name of the dataset
-    :type name: string
-    :param offset: where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)
-    :type offset: float
-    :param markerSize: size of the dots (default = 12)
-    :type markerSize: int
-    :param color: color for the dataset (default #e31a1c)
-    :type color: color
-    :param yMax: the max value for the y axis
-    :type yMax: float
-    :returns:  a pyplot axis with the data plotted
-        
-    """
-
-    xAxis = range(1,len(proteins)+1)
-    fig = pylab.figure(figsize=(22,5))
-    ax = fig.add_subplot(111)
-    xs = []
-    ys = []
-    for x in xAxis:
-        p = proteins[x-1]
-        if p in dataByProtein.keys():
-            for v in dataByProtein[p]["vals"]:
-                xs.append(x+offset)
-                ys.append(v)
-    pylab.grid(b=True, which='major', color='grey', linestyle='--', axis='y', linewidth=1.5, alpha=0.5)
-    pylab.grid(b=True, which='major', color='grey', linestyle='-', axis='x', linewidth=1.5, alpha=0.75)
-    ax.plot(xs, ys, 'o', color=color, markersize=markerSize, label=name)
-    pylab.xticks(xAxis, [item for item in proteins], rotation=45, size=15)
-    pylab.xlim(1, len(proteins)+1)
-    ####################################
-    pylab.yticks([0,yMax/4, yMax/2, 3*yMax/4, yMax], size=15)
-    ####################################
-    pylab.ylim(0, yMax)
-    return ax
-    
-def addStatsDataStructToPlot(proteins, dataByProtein, ax, name, offset=0.0, markerSize=12, color='#377db8'):
-    """addStatsDataStructToPlot adds the contents of a stats file-like datastructure to an existing plot. proteins to be plotted are 
-        listed in the non-redundent list, proteins. THESE MUST BE THE SAME PROTEINS GIVEN IN THE FIRST CALL TO PLOTSTATSDATASTRUCT
-        The data is in dataByProtein, the axis to add to is in ax, the name is in in name.
-        Decent colors are red (['#ae2221', '#d72c2b', '#e78180']) and blue (['#25557d', '#3170a4', '#5696cc'])
-
-    :param proteins: a non-redudent list of the protein names to use (should be the IDs in dataByProtein)
-    :type proteins: list
-    :param dataByProtein: a dictionary (easily created by calculateStatsFile), must contain 'vals' for each p in proteins
-    :type dataByProtein: dictionary
-    :param ax: the pyplot axis to modify
-    :type ax: pyplot axis
-    :param name: the name of the dataset
-    :type name: string
-    :param offset: where to center the point (x axis), scales 0 (left edge; default) to 1.0 (right edge)
-    :type offset: float
-    :param markerSize: size of the dots (default = 12)
-    :type markerSize: int
-    :param color: color for the dataset (default #e31a1c)
-    :type color: color
-    :returns:  a pyplot axis with the data plotted
-        
-    """
-
-    xAxis = range(1,len(proteins)+1)
-    xs = []
-    ys = []
-    for x in xAxis:
-        p = proteins[x-1]
-        if p in dataByProtein.keys():
-            for v in dataByProtein[p]["vals"]:
-                xs.append(x+offset)
-                ys.append(v)
-    ax.plot(xs, ys, 'o', color=color, markersize=markerSize, label=name)
-    return ax
 
 def getRPSeqData(ID):
     """getRPSeqData is a helper function to get the AA and cDNA seqs for ribosomal proteins
@@ -624,55 +465,37 @@ def MAD(list):
 	temp_absdevs = map(lambda item: abs(item - temp_median), list)
 	return numpy.median(temp_absdevs)
 
-'''DEPRECATED FUNCTIONS'''
-def readCSV(datapath, pulse):
-    """readCSV takes a filename (fully specified with datapath) and a boolean if this was a pulsed dataset
-        it return s a list of datastructures encompassing relavent information from the .csv file
+def listReplace(l, to, rv):
+    """listReplace is a helper function replaces all occurances of to with rv in a list l
 
-    :param datapath: a string specifiy the full path/name of the file to be read
-    :type datapath: string
-    :param pulse: a boolean indicating if the dataset is a pulsed dataset
-    :type pulse: boolean
-    :returns:  a list ([data_dictionary, protein_set, peptide_list])
-        data_dictionary has keys as UIDs, and values as dicts with
-            keys for protein, ampu, ampl, amps, isofile
-        protein_set is a set (list) of each protein in the dataset
-        peptide_list is a list of all peptides observed 
-        
-    """
-    data = list( csv.reader( open(datapath, 'rU') ) )
-    header = data[0]
-
-# 1 - Find the indices for the quantities of interest using list comprehensions
-    protein_index = [index for index, item in enumerate(header) if item == "protein"][0]
-    ampu_index = [index for index, item in enumerate(header) if item == "AMP_U"][0]
-    ampl_index = [index for index, item in enumerate(header) if item == "AMP_L"][0]
-    UID_index = [index for index, item in enumerate(header) if item == "isofile"][0]
-    if pulse:
-        amps_index = [index for index, item in enumerate(header) if item == "AMP_S"][0]
-
-# 2 - Declare the peptide list and the protein set
-    peptide_list = []
-    protein_set  = set()
-
-    data_dictionary = {}
-    csv_hold_dict = {}
-    UID_list = []
+    :param l: list to be replaced
+    :type l: list
+    :param to: item to be replaced
+    :type to: string
+    :param rv: item to replace with
+    :type rv: string
+    :returns: a list with all occurances of to replaced with rv
     
-# 3 - Loop over data set, collect amplitudes, charge state, peptide sequence, protein id into protein_set
-    for line in data[1:]:
-        protein = line[protein_index]
-        ampu = float(line[ampu_index])
-        ampl = float(line[ampl_index])
-        if pulse:
-            amps = float(line[amps_index])
+    """
+    tr = []
+    for i in l:
+        if i == to:
+            tr.append(rv)
         else:
-            amps = float(0)
-        UID = line[UID_index]
-        csv_hold_dict[UID] = line
-        UID_list.append(UID)
-        identifier = {"protein": protein, "ampu": ampu, "ampl": ampl, "amps": amps, "uid": UID}
-        data_dictionary[UID] = {"ampu": ampu, "ampl": ampl, "amps": amps, "protein": protein}
-        protein_set.add(protein)
-        peptide_list.append(identifier)
-    return [data_dictionary, protein_set, peptide_list]
+            tr.append(i)
+    return tr
+
+def printSortedDict(d):
+    """printSortedDict is a helper function to print a dictionary
+
+    :param d: a dictionary to be printed
+    :type d: dict
+    :returns: a string of the dictionary
+    
+    """
+    k = d.keys()
+    k.sort()
+    tp = ''
+    for i in k:
+        tp = tp + str(i) + ":" + str(d[str(i)]) + ", "
+    return tp
