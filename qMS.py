@@ -40,7 +40,7 @@ def readIsoCSV(filename, columns=None):
                  'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
                  'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
                  'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
-                 'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file', 'currentCalc', 'resid']
+                 'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file', 'currentCalc', 'resid', 'minIntensity']
         r = csv.reader(open(filename))
         header = r.next()
         pulse = 'AMP_S' in header
@@ -346,7 +346,8 @@ def cleanPlotsDir(path, extensions=['.newcon', '.fit', '.png']):
 def calcResidual(datapath, dataFrame, genPlots=False):
     """calcResidual takes a path to a _peaks directory and a pandas dataFrame containing the contents
         of the _iso.csv file. It appends a column to the dataFrame with the calculated residual
-        (the difference between the fit and data in a .dat file) for each peptide.
+        (the difference between the fit and data in a .dat file) for each peptide. It also appends a
+        column to the dataFrame with the max fit intensity
         Optional paramter genPlots will also generate .plots files that can be used to plot the datasets
 
     :param datapath: A string with the full path to the _plots directory
@@ -357,11 +358,12 @@ def calcResidual(datapath, dataFrame, genPlots=False):
     :param genPlots: Optional boolean telling function if it should write .plots files
     :type genPlots: boolean
 
-    :returns:  the dataFrame modified to include the 'resid' column. .Dats that cause any errors
-        are given fits with constant 666 and resids with constant 666.
+    :returns:  the dataFrame modified to include the 'resid' and 'minIntensity' columns. .Dats that cause any errors
+        are given fits with constant 666, resids with constant 666, and minIntensity with constant -666.
     
     """
     dataFrame['resid']=0
+    dataFrame['minIntensity']=0
     for iso in dataFrame['isofile'].values:
         datFileName = datapath+iso+'.dat'
         try:
@@ -370,14 +372,17 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             datPd['residAdj'] = datPd['resid']+(datPd['dat'].median()-datPd['resid'].median())
             datPd['fit'] = datPd['residAdj']+datPd['dat']
             calcResid = datPd['residAdj'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
+            calcMinIntensity = min([datPd['fit'].max(), datPd['dat'].max()])
         except (IOError, TypeError) as e:
             print "Error " + e.message + " in " + datFileName
             sys.stdout.flush()
             datPd['fit'] = 666
             datPd['residAdj'] = 666
             calcResid = 666
+            calcMinIntensity = -666
         row = dataFrame[dataFrame['isofile']==iso]
         row['resid'] = calcResid
+        row['minIntensity'] = calcMinIntensity
         dataFrame.update(row)
         if genPlots:
             datPd.to_csv(datapath+iso+'.plots', index=False)
