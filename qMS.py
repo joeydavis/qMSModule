@@ -196,7 +196,8 @@ def calcPercent(f, sigfig=2):
     :returns:  a string of the float rounded + ' %'
 
     """
-    return str(round(f, sigfig)*100)+" %"
+    s = str(round(f, sigfig)*100)
+    return s+" %"
 
 def maxLabFunc(k,t):
     """maxLabFunc is a function to calculate the max labeling based on the equation from Stephen Chen's paper
