@@ -260,7 +260,7 @@ def overLabelingFunc(k,t,d):
     
     """
     
-    return 1.0 - (numpy.exp(((0.0-k)+d)*t))
+    return 1.0 - (numpy.exp(-(d+k)*t))
 
 def growthRate(doublingTime):
     """growthRate calculates a growth rate k given a doubling time (units of k can be used in equations)
