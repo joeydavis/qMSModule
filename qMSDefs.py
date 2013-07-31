@@ -5,6 +5,31 @@ Created on Thu May  9 19:29:55 2013
 @author: jhdavis
 """
 import pandas as pd
+
+aaweights = {
+    'A' : 71.09,  # alanine
+    'R' : 156.19, # arginine
+    'D' : 114.11, # aspartic acid
+    'N' : 115.09, # asparagine
+    'C' : 103.15, # cysteine
+    'E' : 129.12, # glutamic acid
+    'Q' : 128.14, # glutamine
+    'G' : 57.05,  # glycine
+    'H' : 137.14, # histidine
+    'I' : 113.16, # isoleucine
+    'L' : 113.16, # leucine
+    'K' : 128.17, # lysine
+    'M' : 131.19, # methionine
+    'F' : 147.18, # phenylalanine
+    'P' : 97.12,  # proline
+    'S' : 87.08,  # serine
+    'T' : 101.11, # threonine
+    'W' : 186.12, # tryptophan
+    'Y' : 163.18, # tyrosine
+    'V' : 99.14,   # valine
+    '*' : 0.00   # stop
+}
+
 positionLookup70S = pd.Series({'XXX':1, 'S1':2, 'S2':3, 'S3':4, 'S4':5, 'S5':6, 'S6':7, 'S7':8, 'S8':9,
                                'S9':10, 'S10':11, 'S11':12, 'S12':13, 'S13':14, 'S14':15, 'S15':16, 'S16':17,
                                'S17':18, 'S18':19, 'S19':20, 'S20L26':21, 'S21':22, 'S22':23,

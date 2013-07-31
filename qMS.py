@@ -229,6 +229,22 @@ def poolFunc(k,t,P):
     
     return 1.0 + (P*numpy.exp((0.0-k)*(1.0+(1.0/P))*t)) - ((1.0 + P)*numpy.exp((0.0-k)*t))
 
+def poolOverFunc(k,t,P):
+    """overLabelingFunc is a function to calculate the labeling kinetics for a protein with a given turnover rate
+        Equation from Stephen Chen's paper
+
+    :param k: the growth rate (calculated as ln(2)/doubling time)
+    :type k: float
+    :param t: the time (if a single number, you get back teh max lab at that point), 
+        can accept an array and will give back the curve    
+    :type t: float/int/array
+    :param d: the turnover rate
+    :type d: float
+    :returns:  the expected labeling lab (array or single value)
+    
+    """
+    return 1.0 - (numpy.exp((0.0-k)*(1.0+(1.0/P))*t))
+
 def overLabelingFunc(k,t,d):
     """overLabelingFunc is a function to calculate the labeling kinetics for a protein with a given turnover rate
         Equation from Stephen Chen's paper
@@ -428,7 +444,7 @@ def getRPSeqData(ID):
     
     return [cDNA, AA] 
 
-def getRPInfo(numberGenes, baseURL='http://ribosome.med.miyazaki-u.ac.jp/rpg.cgi?mode=gene&id=ECO100'):
+def getRPInfo(numberGenes, start=10, baseURL='http://ribosome.med.miyazaki-u.ac.jp/rpg.cgi?mode=gene&id=ECO100'):
     """getRPInfo generates two dictionaries with relevant ribosomal protein information from a database.
         It prefers the url listed above, but can be used with other organisms so long as the
         find commands still work
@@ -442,18 +458,19 @@ def getRPInfo(numberGenes, baseURL='http://ribosome.med.miyazaki-u.ac.jp/rpg.cgi
         of the base key)
         
     """
-    gs = ['01', '02', '03', '04', '05', '06', '07', '08', '09']
-    genes = range(10, numberGenes)
-    genes = gs + genes
+    #gs = ['01', '02', '03', '04', '05', '06', '07', '08', '09']
+    genes = range(start, start+numberGenes)
+    #genes = gs + genes
     base = baseURL
     addys = [base + str(i) for i in genes]
+    print addys
     rpdictGN = {}
     rpdictGP = {}
     for address in addys:
         website = urllib2.urlopen(address)
         website_html = website.read()
         gni = website_html.find('>Gene Name</td><td>')
-        gn = website_html[gni+19:gni+23]
+        gn = website_html[gni+19:gni+26]
         gpi = website_html.find('ibosomal protein ')
         gp = website_html[gpi+17:gpi+20]
         gp = gp.upper()
@@ -524,3 +541,9 @@ def printSortedDict(d):
     for i in k:
         tp = tp + str(i) + ":" + str(d[str(i)]) + ", "
     return tp
+
+def calcMW(seq):
+    mw = 0
+    for aa in seq:
+        mw = mw+qMSDefs.aaweights[aa.upper()]
+    return mw
