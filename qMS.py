@@ -79,7 +79,7 @@ def readIsoCSV(filename, columns=None):
     data['30Spos']=qMSDefs.positionLookup30S[data['protein']].values
     data['otherpos']=positionLookupOther[data['protein']].values
     
-    data['currentPos']=data['70Spos']
+    data['currentPos']=data['otherpos']
     data['ppmDiff']=data['ppm_n14'] - data['ppm_n15']
     data['rtDiff']=data['rt_n14'] - data['rt_n15']
     return data
@@ -409,9 +409,10 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             datPd['fit'] = datPd['residAdj']+datPd['dat']
             calcResid = datPd['residAdj'].abs().sum()/min([datPd['fit'].max(), datPd['dat'].max()])
             calcMinIntensity = min([datPd['fit'].max(), datPd['dat'].max()])
-        except (IOError, TypeError) as e:
+        except (IOError, TypeError, Exception) as e:
             print "Error " + e.message + " in " + datFileName
             sys.stdout.flush()
+            datPd = pd.DataFrame()
             datPd['fit'] = 666
             datPd['residAdj'] = 666
             calcResid = 666
