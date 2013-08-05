@@ -59,7 +59,7 @@ def readIsoCSV(filename, columns=None):
                  'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
                  'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
                  'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
-                 'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file', 'currentCalc', 'resid', 'minIntensity']
+                 'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file', 'currentCalc', 'resid', 'minIntensity', 'handDelete', 'handSave']
         r = csv.reader(open(filename))
         header = r.next()
         pulse = 'AMP_S' in header
@@ -82,6 +82,8 @@ def readIsoCSV(filename, columns=None):
     data['currentPos']=data['otherpos']
     data['ppmDiff']=data['ppm_n14'] - data['ppm_n15']
     data['rtDiff']=data['rt_n14'] - data['rt_n15']
+    data['handDelete'] = False
+    data['handSave'] = False
     return data
 
 def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0):
