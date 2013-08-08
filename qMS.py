@@ -16,6 +16,14 @@ import qMSDefs
 import pandas as pd
 import re
 
+#qMS utilities
+
+path = os.getcwd()
+sys.setrecursionlimit(10000000)
+[startindex, pep_seq_index, exp_mr_index, csvopen] = [0, 0, 0, ''];
+referencePath = '/home/jhdavis/scripts/python/modules/qMSmodule/'
+
+#######Nice sorting and printing utilities######
 def tryint(s):
     try:
         return int(s)
@@ -34,12 +42,6 @@ def sort_nicely(l):
     l.sort(key=alphanum_key)
     return l
 
-#qMS utilities
-
-path = os.getcwd()
-sys.setrecursionlimit(10000000)
-[startindex, pep_seq_index, exp_mr_index, csvopen] = [0, 0, 0, ''];
-referencePath = '/home/jhdavis/scripts/python/modules/qMSmodule/'
 
 def readIsoCSV(filename, columns=None):
     """readIsoCSV takes a filename pointing to a _iso.csv file. It returns the calculated
@@ -216,7 +218,7 @@ def maxLabFunc(k,t):
 
 def poolFunc(k,t,P):
     """poolFunc is a function to calculate the labeling kinetics for a protein with a given pool size
-        Equation from Stephen Chen's paper
+        Equation from Stephen Chen's paper. USE THIS TO FIT THE LABELING OF TERMINAL (70S) pool.
 
     :param k: the growth rate (calculated as ln(2)/doubling time)
     :type k: float
@@ -231,9 +233,9 @@ def poolFunc(k,t,P):
     
     return 1.0 + (P*numpy.exp((0.0-k)*(1.0+(1.0/P))*t)) - ((1.0 + P)*numpy.exp((0.0-k)*t))
 
-def poolOverFunc(k,t,P):
-    """overLabelingFunc is a function to calculate the labeling kinetics for a protein with a given turnover rate
-        Equation from Stephen Chen's paper
+def poolInterFunc(k,t,P):
+    """poolInterFunc is a function to calculate the labeling kinetics for a protein using the 
+        overlabeling of an intermediate. Derived from the differential equation in Stephen Chen's paper
 
     :param k: the growth rate (calculated as ln(2)/doubling time)
     :type k: float
