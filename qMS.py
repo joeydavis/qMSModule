@@ -248,6 +248,22 @@ def poolInterFunc(k,t,P):
     
     """
     return 1.0 - (numpy.exp((0.0-k)*(1.0+(1.0/P))*t))
+    
+def poolInterFracXFunc(k,t,P,X=0.52):
+    """poolInterFunc is a function to calculate the labeling kinetics for a protein using the 
+        overlabeling of an intermediate. Derived from the differential equation in Stephen Chen's paper
+
+    :param k: the growth rate (calculated as ln(2)/doubling time)
+    :type k: float
+    :param t: the time (if a single number, you get back teh max lab at that point), 
+        can accept an array and will give back the curve    
+    :type t: float/int/array
+    :param d: the turnover rate
+    :type d: float
+    :returns:  the expected labeling lab (array or single value)
+    
+    """
+    return X*poolInterFunc(k,t,P) + (1.0-X)*poolFunc(k,t,P)
 
 def overLabelingFunc(k,t,d):
     """overLabelingFunc is a function to calculate the labeling kinetics for a protein with a given turnover rate
