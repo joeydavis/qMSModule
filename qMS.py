@@ -251,7 +251,7 @@ def poolInterFunc(k,t,P):
     """
     return 1.0 - (numpy.exp((0.0-k)*(1.0+(1.0/P))*t))
     
-def poolInterFracXFunc(k,t,P,X=0.52):
+def poolInterFracXFunc(k,t,P,X=0.65):
     """poolInterFunc is a function to calculate the labeling kinetics for a protein using the 
         overlabeling of an intermediate. Derived from the differential equation in Stephen Chen's paper
 
