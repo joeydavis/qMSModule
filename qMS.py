@@ -71,10 +71,12 @@ def readIsoCSV(filename, columns=None):
         if varLab:
             columns.append('FRC_NX')
     data = pd.read_csv(filename, usecols=columns)
+    data = data[pd.notnull(data['AMP_U'])]
+    data = data[pd.notnull(data['AMP_L'])]
     if not pulse:
         data = data.rename(columns={'AMP_L': 'AMP_S'})
 
-    positionOtherDict = {key:int(value)+1 for value, key in enumerate(sorted(set(data['protein'].values)))}
+    positionOtherDict = {key:int(value)+1 for value, key in enumerate(sort_nicely(sorted(set(data['protein'].values))))}
     positionLookupOther = pd.Series(positionOtherDict)
     data['70Spos']=qMSDefs.positionLookup70S[data['protein']].values
     data['50Spos']=qMSDefs.positionLookup50S[data['protein']].values
@@ -347,7 +349,8 @@ def calcValue(df, num, den, offset=0.0):
         nsDF = nsDF + df[x]
     for x in den[1:]:
         dsDF = dsDF + df[x]
-    return (nsDF/dsDF + offset)
+    value = nsDF/dsDF + offset
+    return value
 
 def boolParse(s):
     """boolParse takes a string and returns a bool. Any capitilization of "true" results in True
