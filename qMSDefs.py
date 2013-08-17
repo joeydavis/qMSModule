@@ -185,10 +185,17 @@ rpdPN = {
 
 subtilisSmallSubunit =  ['BSubS02', 'BSubS03', 'BSubS04', 'BSubS05', 'BSubS06', 'BSubS07', 'BSubS08', 'BSubS09', 'BSubS10',
                          'BSubS11', 'BSubS12', 'BSubS13', 'BSubS14', 'BSubS15', 'BSubS16', 'BSubS17', 'BSubS18', 'BSubS20']
+
 subtilisLargeSubunit =  ['BSubL01', 'BSubL02', 'BSubL03', 'BSubL04', 'BSubL05', 'BSubL06', 'BSubL10', 'BSubL11',
                          'BSubL12', 'BSubL13', 'BSubL14', 'BSubL15', 'BSubL16', 'BSubL17', 'BSubL18', 'BSubL19', 'BSubL20', 'BSubL21',
                          'BSubL22', 'BSubL23', 'BSubL24', 'BSubL27', 'BSubL28', 'BSubL29', 'BSubL30', 'BSubL31a', 'BSubL32',
-                         'BSubL33a', 'BSubL35', 'BSubL36']    
+                         'BSubL33a', 'BSubL34', 'BSubL35', 'BSubL36']    
+
+subtilisLargeSubunitPaper =  ['BSubL01', 'BSubL02', 'BSubL03', 'BSubL04', 'BSubL05', 'BSubL06', 'BSubL10', 'BSubL11',
+                         'BSubL12', 'BSubL13', 'BSubL14', 'BSubL15', 'BSubL16', 'BSubL17', 'BSubL18', 'BSubL19', 'BSubL20', 'BSubL21',
+                         'BSubL22', 'BSubL23', 'BSubL24', 'BSubL27', 'BSubL28', 'BSubL29', 'BSubL30', 'BSubL32',
+                         'BSubL33a', 'BSubL34', 'BSubL35', 'BSubL36']    
+
 subtilisInter45S =      ['BSubL01', 'BSubL02', 'BSubL03', 'BSubL04', 'BSubL05', 'BSubL06', 'BSubL10', 'BSubL11',
                          'BSubL12', 'BSubL13', 'BSubL14', 'BSubL15', 'BSubL17', 'BSubL18', 'BSubL19', 'BSubL20', 'BSubL21',
                          'BSubL22', 'BSubL23', 'BSubL24', 'BSubL29', 'BSubL30']
@@ -196,3 +203,8 @@ subtilisInter45S =      ['BSubL01', 'BSubL02', 'BSubL03', 'BSubL04', 'BSubL05', 
 reds = ['#fee5d9', '#fcbba1', '#fc9272', '#fb6a4a', '#de2d26', '#a50f15']
 blues = ['#eff3ff', '#c6dbef', '#93cae1', '#6baed6', '#3182bd', '#08519c']
 diverging = ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641']
+
+subtilisTTOFLargeSubunit = ['RL1', 'RL2', 'RL3', 'RL4', 'RL5', 'RL6', 'RL10', 'RL11',
+                            'RL7', 'RL13', 'RL14', 'RL15', 'RL16', 'RL17', 'RL18', 'RL19', 'RL20', 'RL21',
+                            'RL22', 'RL23', 'RL24', 'RL27', 'RL28', 'RL29', 'RL30', 'RL31', 'RL32',
+                            'RL331', 'RL34', 'RL35', 'RL36']

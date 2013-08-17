@@ -71,10 +71,10 @@ def readIsoCSV(filename, columns=None):
         if varLab:
             columns.append('FRC_NX')
     data = pd.read_csv(filename, usecols=columns)
-    data = data[pd.notnull(data['AMP_U'])]
-    data = data[pd.notnull(data['AMP_L'])]
+    #data = data[pd.notnull(data['AMP_U'])]
     if not pulse:
         data = data.rename(columns={'AMP_L': 'AMP_S'})
+    #data = data[pd.notnull(data['AMP_S'])]
 
     positionOtherDict = {key:int(value)+1 for value, key in enumerate(sort_nicely(sorted(set(data['protein'].values))))}
     positionLookupOther = pd.Series(positionOtherDict)
@@ -571,3 +571,23 @@ def calcMW(seq):
     for aa in seq:
         mw = mw+qMSDefs.aaweights[aa.upper()]
     return mw
+
+def makeNameConvDict(set1, set2):
+    set1toset2 = {}
+    set2toset1 = {}
+    for i in range(len(set1)):
+        set1toset2[set1[i]] = set2[i]
+        set2toset1[set2[i]] = set1[i]
+    return [set1toset2, set2toset1]
+
+def convertNames(fullpath, oldNames, newNames):
+    [oldToNew, newToOld] = makeNameConvDict(oldNames, newNames)
+    dataFrame = readIsoCSV(fullpath)
+    print "###########################OLD#########################"
+    print dataFrame['protein']
+    dataFrame.update(dataFrame['protein'].replace(oldToNew))
+    print "###########################NEW#########################"
+    print dataFrame['protein']
+    print fullpath[:-4]+'_newNames.csv'
+    dataFrame.to_csv(fullpath[:-4]+'_newNames.csv', index=False)
+    return dataFrame
