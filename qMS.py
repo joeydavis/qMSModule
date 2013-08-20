@@ -42,6 +42,26 @@ def sort_nicely(l):
     l.sort(key=alphanum_key)
     return l
 
+def readDataFile(filename, scale=1.0):
+    """readDataFile reads a datafile. The datafile should be comma separated and have both column and row headers listing the proteins/fractions.
+    Empty values should be empty, they will be treated as np.NAN - see lambda below
+    readDataFile takes an optional scale that will multiply the data by the specified factor - useful for "scaling" error
+
+    :param filename: a string of the filename to be read
+    :type filename: string
+    :param scale: a float indicating how to scale the data, default is unscaled (1)
+    :type scale: float
+    :returns:  a data ditionary. 'data', 'fractions', 'proteins' are filled in, others are None
+
+    """
+    with open(filename, 'rb') as inputFile:
+        csvFile = list(csv.reader(inputFile, delimiter = ','))
+        header = csvFile[0]
+        proteins = [row[0] for row in csvFile[1:]]
+        insertValue2 = lambda x, y: numpy.NAN if x=='' else float(x)*y
+        data = numpy.array([[insertValue2(col, scale) for col in row[1:]] for row in csvFile[1:]])
+        inputFile.close()
+        return {'fractions':header[1:], 'proteins':proteins, 'fi':None, 'pi':None, 'data':data}
 
 def readIsoCSV(filename, columns=None):
     """readIsoCSV takes a filename pointing to a _iso.csv file. It returns the calculated
@@ -90,6 +110,74 @@ def readIsoCSV(filename, columns=None):
     data['handSave'] = False
     return data
 
+def subtractDoubleSpike(refDF, dataDF):
+    """subtractDoubleSpike takes two pandas dataFrames, it first divides AMP_U by AMP_S.
+        It then finds the median value for the AMP_U/S field on a protein by protein basis from the reference set.
+        This is subtracted from the experimetnal fields, and they are mupliplied back by AMP_S to give the proper value.
+        A corrected DoubleSpikeDF is returned
+
+    :param refDF: a pandas dataFrame as calculated from an _iso.csv file (qMS.readIsoCSV).
+    :type refDF: pandas dataFrame.
+    :param dataDF: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S).
+    :type dataDF: list of strings.
+    :returns:  a pandas DF that has been corrected for a double spike. Should look the same as the input
+        dataDF with the AMP_U fields now corrected.
+
+    """
+
+    dataDF['AMP_U'] = dataDF['AMP_U']/dataDF['AMP_S']
+
+    refDF['AMP_U'] = refDF['AMP_U']/refDF['AMP_S']
+    for i in dataDF.index:
+        p = dataDF.ix[i]['protein']
+        med = refDF[refDF['protein']==p]['AMP_U'].median()
+        dataDF.ix[i,'AMP_U'] = max(dataDF.ix[i]['AMP_U'] - med, 0.0)
+    dataDF['AMP_U'] = dataDF['AMP_U']*dataDF['AMP_S']
+    refDF['AMP_U'] = refDF['AMP_U']*refDF['AMP_S']
+    
+    return dataDF
+
+def correctFileForDoubleSpike(expPath, refDF=None, refPath=None):
+    """correctFileForDoubleSpike takes a path to a dataset to be corrected and either a reference dataframe
+        or a string pointing to the iso_csv file for the reference set (the double spike alone dataset).
+        It makes a pandas DF out of the experimental data, corrects them for the double spike, and returns 
+        the corrected pandas dataframe
+
+    :param expPath: a path to the experimental dataset
+    :type expPath: strng
+    :param refDF: a pandas dataframe of the reference dataset
+    :type refDF: pandas dataframe
+    :param refPath: a string pointing to the reference datapath
+    :type refPath: a string
+    :returns:  a pandas DF that has been corrected for a double spike.
+
+    """
+    if refDF is None:
+        refDF = readIsoCSV(refPath)
+    currentDF = readIsoCSV(expPath)
+    currentDF = subtractDoubleSpike(refDF, currentDF)
+    return currentDF
+
+def correctListOfFiles(refPath, listOfFiles):
+    """correctListOfFiles takes a path to a reference set (double spike alone) and a list of paths to the files to be corrected.
+        It makes pandas DFs out of the list of files, corrects them for the double spike, and returns a dictionary
+        with the keys as the path to the file and the value as the corrected pandas dataframe
+
+    :param refPath: a path to the reference dataset
+    :type refPath: strng
+    :param listOfFiles: a list of paths to the files to be corrected
+    :type listOfFiles: list of strings.
+    :returns:  a dictionary of a pandas DF that has been corrected for a double spike. Each key is the dict
+        provided in the listOfFiles
+
+    """
+    refDF = readIsoCSV(refPath)
+    DFDict = {}
+    for n,i in enumerate(listOfFiles):
+        currentDF = correctFileForDoubleSpike(i, refDF=refDF, refPath=None)
+        DFDict[i] = currentDF.copy()
+    return DFDict
+
 def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0):
     """calcStatsDict takes a dataFrame and , a numerator, a denominator, an offset (applied to value first)
         and a normalization factor (scaling factor applied last). It returns a dictionary with keys of 
@@ -112,6 +200,52 @@ def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0
     ps = list(set(dataFrame['protein'].values))
     ps.sort()
     return {p:calcValue(dataFrame[dataFrame['protein']==p], numerator, denominator, offset=offset).values*normalization for p in ps}
+
+def multiStatsDictFromDF(dFDict, num, den, namesList=None, normalization=1.0, offset=0.0, normProtein=None):
+    """multiStatsDictFromDF takes a list of dataframesand a list of nums and dens.
+        It returns a dict of dict (first key is the file name) - this leads to a statsDict
+        that is keyed by protein names. All of the statsDicts contain a full compliment of keys 
+        (based on the file list), with empty numpy arrays if there were no values in the original
+        dataset
+
+    :param dFDict: a dict of pandas dataframes (keys are the names of the dataframes - output of qMS.correctListOfFiles)
+    :type dFDict: a dict of pandas dataframes
+    :param num: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type num: list of strings
+    :param den: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type den: list of strings
+    :param namesList: a list of strings identifying the keys in the dfDict to use
+    :type namesList: list of strings
+    :param normalization: a float normalization factor if you want to scale all of the values uniformly
+    :type normalization: float
+    :param offset: a float offset factor if you want to alter the values uniformly
+    :type offset: float
+    :param normProtein: string of the protein to normalize to (will be to the median)
+    :type normProtein: string
+    :returns:  a dictionary of of dicationaries of numpy arrays. First key is the file name, this leads
+        to a dictionary where the first key is the protein name (one of those given in protein_set).
+        This leads to a numpy array with the list of values
+
+    """
+    if namesList is None:
+        namesList = dFDict.keys()
+        
+    allPs = calcStatsDict(dFDict[namesList[0]], num, den)
+    dFStatsDict = dict()
+    for name in namesList:
+        df = dFDict[name]
+        dFStatsDict[name] = calcStatsDict(df, num, den, normalization=normalization, offset=offset)
+        if not (normProtein is None):
+            normValue = 1/numpy.median(dFStatsDict[name][normProtein])
+            dFStatsDict[name] = calcStatsDict(df, num, den, normalization=normValue, offset=offset)
+            
+    for name in namesList[1:]:
+        allPs = appendKeys(allPs, dFStatsDict[name])
+    
+    for name in namesList:
+        dFStatsDict[name] = appendKeys(dFStatsDict[name], allPs) 
+        
+    return dFStatsDict
 
 def multiStatsDict(isoFileList, num, den, normalization=1.0, offset=0.0, normProtein=None):
     """multiStatsDict takes a list of _iso.csv files and a list of nums and dens.
@@ -137,21 +271,10 @@ def multiStatsDict(isoFileList, num, den, normalization=1.0, offset=0.0, normPro
         This leads to a numpy array with the list of values
 
     """
-    allPs = calcStatsDict(readIsoCSV(isoFileList[0]), num, den)
-    fileStatsDict = dict()
-    for f in isoFileList:
-        fileStatsDict[f] = calcStatsDict(readIsoCSV(f), num, den, normalization=normalization, offset=offset)
-        if not normProtein is None:
-            normValue = 1/numpy.median(fileStatsDict[f][normProtein])
-            fileStatsDict[f] = calcStatsDict(readIsoCSV(f), num, den, normalization=normValue, offset=offset)
-        
-    for f in isoFileList[1:]:
-        allPs = appendKeys(allPs, fileStatsDict[f])
-    
-    for f in isoFileList:
-        fileStatsDict[f] = appendKeys(fileStatsDict[f], allPs)
-    
-    return fileStatsDict
+    dFDict = {}
+    for i in isoFileList:
+        dFDict[i] = readIsoCSV(i)
+    return multiStatsDictFromDF(dFDict, num, den, namesList=isoFileList, normalization=normalization, offset=offset, normProtein=normProtein)
 
 def mergeFiles(fileList, numerator, denominator, normProtein=None):
     """mergeFiles takes a list of _iso.csv files and returns a merged statsFile data dictionary structure
@@ -567,12 +690,30 @@ def printSortedDict(d):
     return tp
 
 def calcMW(seq):
-    mw = 0
+    """calcMW is a helper function that calculates the mass of an AA sequence
+
+    :param seq: the sequence to be calculated
+    :type seq: string
+    :returns: a float with the mass of the sequence
+    
+    """
+    mw = 0.0
     for aa in seq:
         mw = mw+qMSDefs.aaweights[aa.upper()]
     return mw
 
 def makeNameConvDict(set1, set2):
+    """calcMW is a helper function that generates a name conversion dictionary.
+        Two lists of strings are input and a list with the two dictionaries is output.
+
+    :param set1: a list of strings in the fist set
+    :type set1: list of strings
+    :param set2: a list of strings in the second set
+    :type set2: list of strings
+    :returns: a list of dictionaries - [0] contains from set1 to set2; 
+        [1] contains from set2 to set1
+    
+    """
     set1toset2 = {}
     set2toset1 = {}
     for i in range(len(set1)):
@@ -581,13 +722,77 @@ def makeNameConvDict(set1, set2):
     return [set1toset2, set2toset1]
 
 def convertNames(fullpath, oldNames, newNames):
+    """convertNames is a helper function that replaces the protein fields in an iso csv files
+        with a converted set of names. The old names are given as a list in oldNames.
+        The new names are given as a list in newNames. Returns the pandas dataframe (with new names).
+        **HAS EXTERNALITY - CREATES A NEW _ISO.CSV FILE IN THE PATH DIRECTORY THAT HAS THE NEW NAMES.
+
+    :param fullpath: a path string to the file to convert
+    :type fullpath: string
+    :param oldNames: a list of strings of the old names
+    :type oldNames: list of strings
+    :param newNames: a list of strings of the old names
+    :type newNames: list of strings
+    :returns: a pandas DF with the corrected names. 
+        **HAS EXTERNALITY - CREATES A NEW _ISO.CSV FILE IN THE PATH DIRECTORY THAT HAS THE NEW NAMES.
+    
+    """
     [oldToNew, newToOld] = makeNameConvDict(oldNames, newNames)
     dataFrame = readIsoCSV(fullpath)
-    print "###########################OLD#########################"
-    print dataFrame['protein']
     dataFrame.update(dataFrame['protein'].replace(oldToNew))
-    print "###########################NEW#########################"
-    print dataFrame['protein']
-    print fullpath[:-4]+'_newNames.csv'
     dataFrame.to_csv(fullpath[:-4]+'_newNames.csv', index=False)
     return dataFrame
+
+def concatonateIsoCSVFiles(fileList):
+    """concatonateIsoCSVFiles is a helper function that merges a series of isocsv files.
+        It does outputs these merged files in the working directory as "mergedOutTmp.csv"
+
+    :param fileList: a list of full path strings to the files to be merged
+    :type fileList: a list of strings
+    :returns:  no return. 
+        **HAS EXTERNALITY - CREATES A NEW _ISO.CSV FILE IN THE WORKING DIRECTORY CALLED mergedOutTmp.csv.
+    
+    """
+    initialData = open(fileList[0], 'r').read()
+    for i in fileList[1:]:
+        initialData = initialData + open(i, 'r').read()[1:]
+        
+    fout = open("mergedOutTmp.csv", "w")
+    fout.write(initialData)
+    fout.close()
+
+def readMSSpectraFile(datapath):
+    """readMSSpectraFile is a helper function that reads a spectra .txt file (saved in the _plots directory by massacre)
+
+    :param datapath: a full path string to the file to be read
+    :type datapath: a sting
+    :returns:  a list with arrays for the x values [0], y values [1], and the datapath [3]
+    
+    """
+    data = list(csv.reader( open(datapath, 'rU'), delimiter=' '))
+    xs = []
+    ys = []
+    for line in data:
+        xs.append(float(line[0]))
+        ys.append(float(line[1]))
+    return [xs, ys, datapath]
+
+def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, normalization=1.0, offset=0.0):
+    outFile = open(filePath, 'w')
+    header = 'Protein,'
+    statsDictDict = {}
+    for i in keyList:
+        header = header + i + ','
+        statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normalization, offset=offset)
+    outFile.write(header[:-1] + '\n')
+    
+    for p in subunits:
+        line = p + ','
+        for k in keyList:
+            try:
+                line = line + str(numpy.median(statsDictDict[k][p])) + ','
+            except KeyError:
+                line = line + ','
+        outFile.write(line[:-1] + '\n')
+    
+    
