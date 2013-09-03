@@ -777,13 +777,44 @@ def readMSSpectraFile(datapath):
         ys.append(float(line[1]))
     return [xs, ys, datapath]
 
-def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, normalization=1.0, offset=0.0):
+def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, normalization=1.0, offset=0.0, normProtein=None):
+    """outputDataMatrixFile outputs a datamatrix that can bea easily plotted as a heat map or clustered or etc.
+        It uses a dfStatsDict, keyList (the list of the dataset names), proteins to plot, the num, den, nommalization, offset, and
+        normProtein if desired
+
+    :param filePath: a full path string to the file to be written
+    :type filePath: a sting
+    :param dfStatsDict: a dict of pandas dataframes (keys are the names of the dataframes - output of qMS.correctListOfFiles)
+    :type dfStatsDict: a dict of pandas dataFrames
+    :param keyList: a list of strings with the keys for the dict
+    :type keyList: list of strings
+    :param subunits: a list of strings of the proteins to be plotted
+    :type subunits: list of strings
+    :param num: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type num: list of strings
+    :param den: a list of strings identifying the numerator (must be AMP_U, AMP_L, and/or AMP_S)
+    :type den: list of strings
+    :param normalization: a float normalization factor if you want to scale all of the values uniformly
+    :type normalization: float
+    :param offset: a float offset factor if you want to alter the values uniformly
+    :type offset: float
+    :param normProtein: string of the protein to normalize to (will be to the median)
+    :type normProtein: string
+    :returns:  a dictionary of of dicationaries of numpy arrays. First key is the file name, this leads
+        to a dictionary where the first key is the protein name (one of those given in protein_set).
+        This leads to a numpy array with the list of calculated values.
+        ***************HAS EXTERNALITY - CREATES A FILE WITH ALL OF THIS DATA**********************
+    
+    """
     outFile = open(filePath, 'w')
     header = 'Protein,'
     statsDictDict = {}
     for i in keyList:
         header = header + i + ','
         statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normalization, offset=offset)
+        if not (normProtein is None):
+            normValue = 1/numpy.median(statsDictDict[i][normProtein])
+            statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normValue, offset=offset)
     outFile.write(header[:-1] + '\n')
     
     for p in subunits:
@@ -795,4 +826,5 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, nor
                 line = line + ','
         outFile.write(line[:-1] + '\n')
     
+    return statsDictDict
     

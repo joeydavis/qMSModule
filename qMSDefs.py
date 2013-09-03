@@ -49,15 +49,15 @@ positionLookup30S = pd.Series({'XXX':1, 'S1':2, 'S2':3, 'S3':4, 'S4':5, 'S5':6, 
                                
 positionLabels70S = ['XXX', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8',
                      'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16',
-                     'S17', 'S18', 'S19', 'S20L26', 'S21',
+                     'S17', 'S18', 'S19', 'S20L26', 'S21', 'S22',
                      'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7L12', 'L8', 'L9', 
                      'L10', 'L11', 'L12', 'L13', 'L14', 'L15', 'L16', 'L17', 'L18', 
                      'L19', 'L20', 'L21', 'L22', 'L23', 'L24', 'L25', 'L26', 'L27', 
                      'L28', 'L29', 'L30', 'L31', 'L32', 'L33', 'L34', 'L35', 'L36']
                                
-positionLabels50S = ['XXX', 'S1', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7L12', 'L9', 
-                     'L10', 'L11', 'L13', 'L14', 'L15', 'L16', 'L17', 'L18',
-                     'L19', 'L20', 'L21', 'L22', 'L23', 'L24', 'L25', 'L27', 
+positionLabels50S = ['XXX', 'S1', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7L12', 'L8', 'L9', 
+                     'L10', 'L11', 'L12', 'L13', 'L14', 'L15', 'L16', 'L17', 'L18',
+                     'L19', 'L20', 'L21', 'L22', 'L23', 'L24', 'L25', 'L26', 'L27', 
                      'L28', 'L29', 'L30', 'L31', 'L32', 'L33', 'L34', 'L35', 'L36']
                                
 positionLabels30S = ['XXX', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8',
@@ -184,11 +184,11 @@ rpdPN = {
 }
 
 subtilisSmallSubunit =  ['BSubS02', 'BSubS03', 'BSubS04', 'BSubS05', 'BSubS06', 'BSubS07', 'BSubS08', 'BSubS09', 'BSubS10',
-                         'BSubS11', 'BSubS12', 'BSubS13', 'BSubS14', 'BSubS15', 'BSubS16', 'BSubS17', 'BSubS18', 'BSubS20']
+                         'BSubS11', 'BSubS12', 'BSubS13', 'BSubS14', 'BSubS15', 'BSubS16', 'BSubS17', 'BSubS18', 'BSubS19', 'BSubS20']
 
 subtilisLargeSubunit =  ['BSubL01', 'BSubL02', 'BSubL03', 'BSubL04', 'BSubL05', 'BSubL06', 'BSubL10', 'BSubL11',
                          'BSubL12', 'BSubL13', 'BSubL14', 'BSubL15', 'BSubL16', 'BSubL17', 'BSubL18', 'BSubL19', 'BSubL20', 'BSubL21',
-                         'BSubL22', 'BSubL23', 'BSubL24', 'BSubL27', 'BSubL28', 'BSubL29', 'BSubL30', 'BSubL31a', 'BSubL32',
+                         'BSubL22', 'BSubL23', 'BSubL24', 'BSubL27', 'BSubL28', 'BSubL29', 'BSubL30', 'BSubL31a', 'BSubL31b', 'BSubL32',
                          'BSubL33a', 'BSubL34', 'BSubL35', 'BSubL36']    
 
 subtilisLargeSubunitPaper =  ['BSubL01', 'BSubL02', 'BSubL03', 'BSubL04', 'BSubL05', 'BSubL06', 'BSubL10', 'BSubL11',
@@ -206,5 +206,8 @@ diverging = ['#d7191c', '#fdae61', '#ffffbf', '#a6d96a', '#1a9641']
 
 subtilisTTOFLargeSubunit = ['RL1', 'RL2', 'RL3', 'RL4', 'RL5', 'RL6', 'RL10', 'RL11',
                             'RL7', 'RL13', 'RL14', 'RL15', 'RL16', 'RL17', 'RL18', 'RL19', 'RL20', 'RL21',
-                            'RL22', 'RL23', 'RL24', 'RL27', 'RL28', 'RL29', 'RL30', 'RL31', 'RL32',
+                            'RL22', 'RL23', 'RL24', 'RL27', 'RL28', 'RL29', 'RL30', 'RL31', 'RL31B', 'RL32',
                             'RL331', 'RL34', 'RL35', 'RL36']
+
+subtilisTTOFSmallSubunit = ['RS2', 'RS3', 'RS4', 'RS5', 'RS6', 'RS7', 'RS8', 'RS9', 'RS10', 'RS11',
+                            'RS12', 'RS13', 'RS14', 'RS15', 'RS16', 'RS17', 'RS18', 'RS19', 'RS20']
