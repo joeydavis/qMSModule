@@ -42,8 +42,8 @@ def sort_nicely(l):
     l.sort(key=alphanum_key)
     return l
 
-def readDataFile(filename, scale=1.0):
-    """readDataFile reads a datafile. The datafile should be comma separated and have both column and row headers listing the proteins/fractions.
+def readDataFile(filename, scale=1.0, delimiter='\t'):
+    """readDataFile reads a datafile. The datafile should be tab separated and have both column and row headers listing the proteins/fractions.
     Empty values should be empty, they will be treated as np.NAN - see lambda below
     readDataFile takes an optional scale that will multiply the data by the specified factor - useful for "scaling" error
 
@@ -55,10 +55,11 @@ def readDataFile(filename, scale=1.0):
 
     """
     with open(filename, 'rb') as inputFile:
-        csvFile = list(csv.reader(inputFile, delimiter = ','))
+        csvFile = list(csv.reader(inputFile, delimiter = delimiter))
         header = csvFile[0]
         proteins = [row[0] for row in csvFile[1:]]
-        insertValue2 = lambda x, y: numpy.NAN if x=='' else float(x)*y
+        #insertValue2 = lambda x, y: numpy.NAN if x=='' else float(x)*y
+        insertValue2 = lambda x, y: 0.0 if x=='' else float(x)*y
         data = numpy.array([[insertValue2(col, scale) for col in row[1:]] for row in csvFile[1:]])
         inputFile.close()
         return {'fractions':header[1:], 'proteins':proteins, 'fi':None, 'pi':None, 'data':data}
@@ -158,7 +159,7 @@ def correctFileForDoubleSpike(expPath, refDF=None, refPath=None):
     currentDF = subtractDoubleSpike(refDF, currentDF)
     return currentDF
 
-def correctListOfFiles(refPath, listOfFiles):
+def correctListOfFiles(refPath, listOfFiles, extension=None):
     """correctListOfFiles takes a path to a reference set (double spike alone) and a list of paths to the files to be corrected.
         It makes pandas DFs out of the list of files, corrects them for the double spike, and returns a dictionary
         with the keys as the path to the file and the value as the corrected pandas dataframe
@@ -176,9 +177,29 @@ def correctListOfFiles(refPath, listOfFiles):
     for n,i in enumerate(listOfFiles):
         currentDF = correctFileForDoubleSpike(i, refDF=refDF, refPath=None)
         DFDict[i] = currentDF.copy()
+        if not (extension is None):
+            currentDF.to_csv(i+extension, index=False)
     return DFDict
 
-def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0):
+def openListOfFiles(listOfFiles):
+    """openListOfFiles takes a list of files and resturns a dictionary of pandas dataframes with the contents
+
+    :param listOfFiles: a list of paths to the files to be corrected
+    :type listOfFiles: list of strings.
+    :returns:  a dictionary of a pandas DF that has been corrected for a double spike. Each key is the dict
+        provided in the listOfFiles
+
+    """
+    DFDict = {}
+    for n,i in enumerate(listOfFiles):
+        currentDF = readIsoCSV(i)
+        DFDict[i] = currentDF.copy()
+    return DFDict
+
+def unity(x):
+    return x
+
+def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0, func=unity):
     """calcStatsDict takes a dataFrame and , a numerator, a denominator, an offset (applied to value first)
         and a normalization factor (scaling factor applied last). It returns a dictionary with keys of 
         protein names and values as a numpy array of calculated values based on numerator and denominator keys.
@@ -199,7 +220,7 @@ def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0
     """
     ps = list(set(dataFrame['protein'].values))
     ps.sort()
-    return {p:calcValue(dataFrame[dataFrame['protein']==p], numerator, denominator, offset=offset).values*normalization for p in ps}
+    return {p:calcValue(dataFrame[dataFrame['protein']==p], numerator, denominator, offset=offset, func=func).values*normalization for p in ps}
 
 def multiStatsDictFromDF(dFDict, num, den, namesList=None, normalization=1.0, offset=0.0, normProtein=None):
     """multiStatsDictFromDF takes a list of dataframesand a list of nums and dens.
@@ -451,7 +472,7 @@ def appendKeys(d1, d2):
         d1 = addBlankKey(d1, k)
     return d1
 
-def calcValue(df, num, den, offset=0.0):
+def calcValue(df, num, den, offset=0.0, func=unity):
     """calcVale takes a pandas dataFrame bearing the keys to be used and calculates
         the ratio of the num/den (specified as lists of the keys - AMP_U, AMP_L, AMP_S)
 
@@ -473,7 +494,7 @@ def calcValue(df, num, den, offset=0.0):
     for x in den[1:]:
         dsDF = dsDF + df[x]
     value = nsDF/dsDF + offset
-    return value
+    return func(value)
 
 def boolParse(s):
     """boolParse takes a string and returns a bool. Any capitilization of "true" results in True
@@ -743,7 +764,7 @@ def convertNames(fullpath, oldNames, newNames):
     dataFrame.to_csv(fullpath[:-4]+'_newNames.csv', index=False)
     return dataFrame
 
-def concatonateIsoCSVFiles(fileList):
+def concatonateIsoCSVFiles(fileList, outFile='mergedOutTemp.csv'):
     """concatonateIsoCSVFiles is a helper function that merges a series of isocsv files.
         It does outputs these merged files in the working directory as "mergedOutTmp.csv"
 
@@ -755,9 +776,12 @@ def concatonateIsoCSVFiles(fileList):
     """
     initialData = open(fileList[0], 'r').read()
     for i in fileList[1:]:
-        initialData = initialData + open(i, 'r').read()[1:]
+        with open(i,'r') as f:
+            next(f)
+            for line in f:
+                initialData = initialData + line
         
-    fout = open("mergedOutTmp.csv", "w")
+    fout = open(outFile, "w")
     fout.write(initialData)
     fout.close()
 
@@ -777,7 +801,11 @@ def readMSSpectraFile(datapath):
         ys.append(float(line[1]))
     return [xs, ys, datapath]
 
-def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, normalization=1.0, offset=0.0, normProtein=None):
+def offsetLog(x, offset=1.0):
+    return numpy.log(x+offset)
+    
+
+def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, normalization=1.0, offset=0.0, normProtein=None, rowNorms=None, delimiter=',', func=unity):
     """outputDataMatrixFile outputs a datamatrix that can bea easily plotted as a heat map or clustered or etc.
         It uses a dfStatsDict, keyList (the list of the dataset names), proteins to plot, the num, den, nommalization, offset, and
         normProtein if desired
@@ -807,23 +835,30 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, nor
     
     """
     outFile = open(filePath, 'w')
-    header = 'Protein,'
+    header = 'Protein'+delimiter
     statsDictDict = {}
+    if rowNorms is None:
+        rowNorms = {k:1.0 for k in keyList}
     for i in keyList:
-        header = header + i + ','
-        statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normalization, offset=offset)
+        header = header + i + delimiter
+        statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=1.0/rowNorms[i], offset=offset)
         if not (normProtein is None):
-            normValue = 1/numpy.median(statsDictDict[i][normProtein])
-            statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normValue, offset=offset)
+            if normProtein == 'mean':
+                normValue = 1/numpy.mean(numpy.array([numpy.median(statsDictDict[i][p]) for p in statsDictDict[i].keys()]))
+            elif normProtein == 'median':
+                normValue = 1/numpy.median(numpy.array([j for j in numpy.array([numpy.median(statsDictDict[i][p]) for p in statsDictDict[i].keys()]) if j > 0.1]))
+            else:
+                normValue = 1/numpy.median(statsDictDict[i][normProtein])
+            statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normValue, offset=offset, func=func)
     outFile.write(header[:-1] + '\n')
     
     for p in subunits:
-        line = p + ','
+        line = p + delimiter
         for k in keyList:
             try:
-                line = line + str(numpy.median(statsDictDict[k][p])) + ','
+                line = line + str(numpy.median(statsDictDict[k][p])) + delimiter
             except KeyError:
-                line = line + ','
+                line = line + delimiter
         outFile.write(line[:-1] + '\n')
     
     return statsDictDict
