@@ -493,7 +493,10 @@ def calcValue(df, num, den, offset=0.0, func=unity):
         nsDF = nsDF + df[x]
     for x in den[1:]:
         dsDF = dsDF + df[x]
-    value = nsDF/dsDF + offset
+    try:
+        value = nsDF/dsDF + offset
+    except TypeError:
+        value = 0.0
     return func(value)
 
 def boolParse(s):
