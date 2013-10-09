@@ -159,7 +159,7 @@ def correctFileForDoubleSpike(expPath, refDF=None, refPath=None):
     currentDF = subtractDoubleSpike(refDF, currentDF)
     return currentDF
 
-def correctListOfFiles(refPath, listOfFiles, extension=None):
+def correctListOfFiles(refPath, listOfFiles, extension=None, savePath=None):
     """correctListOfFiles takes a path to a reference set (double spike alone) and a list of paths to the files to be corrected.
         It makes pandas DFs out of the list of files, corrects them for the double spike, and returns a dictionary
         with the keys as the path to the file and the value as the corrected pandas dataframe
@@ -178,7 +178,11 @@ def correctListOfFiles(refPath, listOfFiles, extension=None):
         currentDF = correctFileForDoubleSpike(i, refDF=refDF, refPath=None)
         DFDict[i] = currentDF.copy()
         if not (extension is None):
-            currentDF.to_csv(i+extension, index=False)
+            if (savePath is None):
+                currentDF.to_csv(i+extension, index=False)
+            else:
+                fileName = i.split('/')[-1]
+                currentDF.to_csv(savePath+fileName+extension, index=False)
     return DFDict
 
 def openListOfFiles(listOfFiles):
@@ -836,7 +840,7 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, nor
         This leads to a numpy array with the list of calculated values.
         ***************HAS EXTERNALITY - CREATES A FILE WITH ALL OF THIS DATA**********************
     
-    """
+    """       
     outFile = open(filePath, 'w')
     header = 'Protein'+delimiter
     statsDictDict = {}
@@ -854,7 +858,14 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, nor
                 normValue = 1/numpy.median(statsDictDict[i][normProtein])
             statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normValue, offset=offset, func=func)
     outFile.write(header[:-1] + '\n')
-    
+
+    if subunits is None:
+        pList = []
+        for i in keyList:
+            cList = statsDictDict[i].keys()
+            for prot in cList:
+                pList.append(prot)
+    subunits = sort_nicely(list(set(pList)))
     for p in subunits:
         line = p + delimiter
         for k in keyList:
@@ -863,6 +874,5 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, nor
             except KeyError:
                 line = line + delimiter
         outFile.write(line[:-1] + '\n')
-    
     return statsDictDict
     
