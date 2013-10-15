@@ -837,7 +837,7 @@ def offsetLog(x, offset=1.0):
     return numpy.log(x+offset)
     
 
-def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, normalization=1.0, offset=0.0, normProtein=None, rowNorms=None, delimiter=',', func=unity):
+def outputDataMatrixFile(filePath, dfStatsDict, keyList, num, den, subunits=None, normalization=1.0, offset=0.0, normProtein=None, rowNorms=None, delimiter=',', func=unity):
     """outputDataMatrixFile outputs a datamatrix that can bea easily plotted as a heat map or clustered or etc.
         It uses a dfStatsDict, keyList (the list of the dataset names), proteins to plot, the num, den, nommalization, offset, and
         normProtein if desired
@@ -890,7 +890,7 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, subunits, num, den, nor
             cList = statsDictDict[i].keys()
             for prot in cList:
                 pList.append(prot)
-    subunits = sort_nicely(list(set(pList)))
+        subunits = sort_nicely(list(set(pList)))
     for p in subunits:
         line = p + delimiter
         for k in keyList:
