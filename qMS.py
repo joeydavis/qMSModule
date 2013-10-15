@@ -42,6 +42,19 @@ def sort_nicely(l):
     l.sort(key=alphanum_key)
     return l
 
+def calculateMedian(statsDictDict, orderedListOfDictKeys, subunits, defaultValue=0.0):
+    proteinList = {}    
+    for p in subunits:
+            proteinList[p] = []
+    
+    for n in orderedListOfDictKeys:
+        for p in subunits:
+            try:
+                proteinList[p].append(getProtMedValue(statsDictDict[n], p))
+            except KeyError:
+                proteinList[p].append(defaultValue)
+    return proteinList
+
 def readDataFile(filename, scale=1.0, delimiter='\t'):
     """readDataFile reads a datafile. The datafile should be tab separated and have both column and row headers listing the proteins/fractions.
     Empty values should be empty, they will be treated as np.NAN - see lambda below
@@ -431,6 +444,18 @@ def overLabelingFunc(k,t,d):
     """
     
     return 1.0 - (numpy.exp(-(d+k)*t))
+
+def growthCurve(doublingTime, t, Ai):
+    """growthRate calculates a growth rate k given a doubling time (units of k can be used in equations)
+        listed in Stephen Chen's paper
+
+    :param doublingTime: the doubling time of the cell in units of time (mins, secs)
+    :type doublingTime: floatz
+    :returns:  the growth rate k (units of inverse time) - calculated at ln(2)/k
+    
+    """
+    
+    return Ai*numpy.exp2(t/float(doublingTime))
 
 def growthRate(doublingTime):
     """growthRate calculates a growth rate k given a doubling time (units of k can be used in equations)
