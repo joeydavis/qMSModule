@@ -554,6 +554,7 @@ def preProcessIsoCSV(isoPath, genPlots):
     """
     dataFrame = readIsoCSV(isoPath)
     dataFrame['currentCalc'] = calcValue(dataFrame, ['AMP_U'], ['AMP_U', 'AMP_S'])
+    dataFrame['ratio'] = calcValue(dataFrame, ['AMP_U'], ['AMP_S'])
     rootPath = '/'.join(isoPath.split('/')[:-1])+'/'
     dataFrame = calcResidual(rootPath, dataFrame, genPlots=genPlots)
 
