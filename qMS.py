@@ -77,7 +77,7 @@ def readDataFile(filename, scale=1.0, delimiter='\t'):
         inputFile.close()
         return {'fractions':header[1:], 'proteins':proteins, 'fi':None, 'pi':None, 'data':data}
 
-def readIsoCSV(filename, columns=None):
+def readIsoCSV(filename, columns=None, noProcess=False):
     """readIsoCSV takes a filename pointing to a _iso.csv file. It returns the calculated
         pandas dataFrame. Optional argument columns can be used to specify specific column headers
 
@@ -91,11 +91,23 @@ def readIsoCSV(filename, columns=None):
     """
 
     if columns is None:
-        columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
-                 'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
-                 'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
-                 'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
-                 'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file', 'currentCalc', 'resid', 'minIntensity', 'handDelete', 'handSave']
+        if noProcess:
+            columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
+                     'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
+                     'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
+                     'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
+                     'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file']
+                     
+        else:
+            columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
+                     'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
+                     'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
+                     'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
+                     'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file',
+                     'currentCalc', 'resid', 'minIntensity',
+                     '70Spos', '50Spos', '30Spos', 'otherpos', 'currentPos',
+                     'ppmDiff', 'rtDiff', 'handDelete', 'handSave']
+        
         r = csv.reader(open(filename))
         header = r.next()
         pulse = 'AMP_S' in header
@@ -105,10 +117,8 @@ def readIsoCSV(filename, columns=None):
         if varLab:
             columns.append('FRC_NX')
     data = pd.read_csv(filename, usecols=columns)
-    #data = data[pd.notnull(data['AMP_U'])]
     if not pulse:
         data = data.rename(columns={'AMP_L': 'AMP_S'})
-    #data = data[pd.notnull(data['AMP_S'])]
 
     positionOtherDict = {key:int(value)+1 for value, key in enumerate(sort_nicely(sorted(set(data['protein'].values))))}
     positionLookupOther = pd.Series(positionOtherDict)
