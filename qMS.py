@@ -91,16 +91,22 @@ def readIsoCSV(filename, columns=None, noProcess=False):
     """
 
     if columns is None:
+        r = csv.reader(open(filename))
+        header = r.next()
+        pulse = 'AMP_S' in header
+        varLab = 'FRC_NX' in header
+        al = 'AMP_L' in header
+        
         if noProcess:
             columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
-                     'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
+                     'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 
                      'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
                      'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
                      'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file']
                      
         else:
             columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
-                     'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 'AMP_L', 
+                     'chisq', 'symb', 'mz', 'B', 'OFF', 'GW', 'AMP_U', 
                      'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
                      'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
                      'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file',
@@ -108,14 +114,13 @@ def readIsoCSV(filename, columns=None, noProcess=False):
                      '70Spos', '50Spos', '30Spos', 'otherpos', 'currentPos',
                      'ppmDiff', 'rtDiff', 'handDelete', 'handSave']
         
-        r = csv.reader(open(filename))
-        header = r.next()
-        pulse = 'AMP_S' in header
-        varLab = 'FRC_NX' in header
+        
         if pulse:
             columns.append('AMP_S')
         if varLab:
             columns.append('FRC_NX')
+        if al:
+            columns.append('AMP_L')
     data = pd.read_csv(filename, usecols=columns)
     if not pulse:
         data = data.rename(columns={'AMP_L': 'AMP_S'})
