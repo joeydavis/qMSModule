@@ -110,7 +110,7 @@ def readIsoCSV(filename, columns=None, noProcess=False):
                      'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
                      'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
                      'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file',
-                     'currentCalc', 'resid', 'minIntensity',
+                     'currentCalc', 'resid', 'minIntensity', 'ratio',
                      '70Spos', '50Spos', '30Spos', 'otherpos', 'currentPos',
                      'ppmDiff', 'rtDiff', 'handDelete', 'handSave']
         
@@ -567,13 +567,15 @@ def preProcessIsoCSV(isoPath, genPlots):
         externality of generating .plots files in the _peaks directory if genPlots is true
     
     """
-    dataFrame = readIsoCSV(isoPath)
+    print "reading : " + isoPath + "..."
+    dataFrame = readIsoCSV(isoPath, noProcess=True)
     dataFrame['currentCalc'] = calcValue(dataFrame, ['AMP_U'], ['AMP_U', 'AMP_S'])
     dataFrame['ratio'] = calcValue(dataFrame, ['AMP_U'], ['AMP_S'])
     rootPath = '/'.join(isoPath.split('/')[:-1])+'/'
     dataFrame = calcResidual(rootPath, dataFrame, genPlots=genPlots)
 
     fileName = isoPath.split('/')[-1:][0].replace('.', '_res.')
+    print "writing : " + fileName + "..."
     dataFrame.to_csv(rootPath+fileName, index=False)
     return dataFrame
 
