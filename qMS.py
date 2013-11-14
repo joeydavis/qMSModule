@@ -629,8 +629,7 @@ def calcResidual(datapath, dataFrame, genPlots=False):
         except (IOError, TypeError, Exception) as e:
             print "Error " + e.message + " in " + datFileName
             sys.stdout.flush()
-            datPd = pd.DataFrame()
-            datPd['fit'] = 666
+            datPd = pd.DataFrame({'fit' : 666}, index=[0])
             datPd['residAdj'] = 666
             calcResid = 666
             calcMinIntensity = -666
