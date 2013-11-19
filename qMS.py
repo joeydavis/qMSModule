@@ -540,6 +540,9 @@ def calcValue(df, num, den, offset=0.0, func=unity):
     try:
         value = nsDF/dsDF + offset
     except TypeError:
+        print "Error in calculating values - some entry must contain strings." 
+        print "This can be fixed by deleting this row in vi (you'll see a bunch of NaN values there)." 
+        print "Until this is fixed, all values set to 0.0" 
         value = 0.0
     return func(value)
 
