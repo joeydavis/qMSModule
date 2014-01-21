@@ -7,28 +7,52 @@ Created on Thu May  9 19:29:55 2013
 import pandas as pd
 
 aaweights = {
-    'A' : 71.09,  # alanine
-    'R' : 156.19, # arginine
-    'D' : 114.11, # aspartic acid
-    'N' : 115.09, # asparagine
-    'C' : 103.15, # cysteine
-    'E' : 129.12, # glutamic acid
-    'Q' : 128.14, # glutamine
-    'G' : 57.05,  # glycine
-    'H' : 137.14, # histidine
-    'I' : 113.16, # isoleucine
-    'L' : 113.16, # leucine
-    'K' : 128.17, # lysine
-    'M' : 131.19, # methionine
-    'F' : 147.18, # phenylalanine
-    'P' : 97.12,  # proline
-    'S' : 87.08,  # serine
-    'T' : 101.11, # threonine
-    'W' : 186.12, # tryptophan
-    'Y' : 163.18, # tyrosine
-    'V' : 99.14,   # valine
-    '*' : 0.00   # stop
+    'A':71.03711,
+    'R':156.10111,
+    'N':114.04293,
+    'D':115.02694,
+    'C':103.00919,
+    'E':129.04259,
+    'Q':128.05858,
+    'G':57.02146,
+    'H':137.05891,
+    'I':113.08406,
+    'L':113.08406,
+    'K':128.09496,
+    'M':131.04049,
+    'F':147.06841,
+    'P':97.05276,
+    'S':87.03203,
+    'T':101.04768,
+    'W':186.07931,
+    'Y':163.06333,
+    'V':99.06841
 }
+aaNitrogens = {
+    'A':1,
+    'R':4,
+    'N':2,
+    'D':1,
+    'C':1,
+    'E':1,
+    'Q':2,
+    'G':1,
+    'H':3,
+    'I':1,
+    'L':1,
+    'K':2,
+    'M':1,
+    'F':1,
+    'P':1,
+    'S':1,
+    'T':1,
+    'W':2,
+    'Y':1,
+    'V':1
+}
+
+N14Mass = 14.0030740048
+N15Mass = 15.0001088982
 
 positionLookup70S = pd.Series({'XXX':1, 'S1':2, 'S2':3, 'S3':4, 'S4':5, 'S5':6, 'S6':7, 'S7':8, 'S8':9,
                                'S9':10, 'S10':11, 'S11':12, 'S12':13, 'S13':14, 'S14':15, 'S15':16, 'S16':17,
@@ -54,6 +78,15 @@ positionLabels70S = ['XXX', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8',
                      'L10', 'L11', 'L12', 'L13', 'L14', 'L15', 'L16', 'L17', 'L18', 
                      'L19', 'L20', 'L21', 'L22', 'L23', 'L24', 'L25', 'L26', 'L27', 
                      'L28', 'L29', 'L30', 'L31', 'L32', 'L33', 'L34', 'L35', 'L36']
+
+positionLabelsS10 = ['S10', 'L3', 'L4', 'L23', 'L2', 'S19', 'L22',
+                     'S3', 'L16', 'L29', 'S17']
+
+positionLabelsSpc = ['L14', 'L24', 'L5', 'S14', 'S8', 'L6', 'L18',
+                     'S5', 'L30', 'L15', 'L36']
+
+positionLabelsTest = ['S7']
+
 
 coliTTOF = ['R' + i for i in positionLabels70S]
                                
