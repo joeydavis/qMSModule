@@ -557,7 +557,7 @@ def boolParse(s):
     """
     return s.upper()=='TRUE'
 
-def preProcessIsoCSV(isoPath, genPlots):
+def preProcessIsoCSV(isoPath, genPlots=True):
     """preProcessIsoCSV processes an _iso.csv and _plots directory to append the 
         residual column as well as a "currentCalc" column showing protein levels.
         Function is a helper that calls calcResidual
@@ -837,7 +837,7 @@ def concatonateIsoCSVFiles(fileList, outFile='mergedOutTemp.csv'):
     fout.write(initialData)
     fout.close()
 
-def readMSSpectraFile(datapath):
+def readMSSpectraFile(datapath, plots=False):
     """readMSSpectraFile is a helper function that reads a spectra .txt file (saved in the _plots directory by massacre)
 
     :param datapath: a full path string to the file to be read
