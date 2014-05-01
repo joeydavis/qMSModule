@@ -516,6 +516,63 @@ def appendKeys(d1, d2):
         d1 = addBlankKey(d1, k)
     return d1
 
+def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy'], normValue=1.0, offset=0.0, total=False, allData=False):
+    """getOccupancy takes a pandas dataframe generated from reading an MRM CSV file
+        as well as a fileName (eg.wiff) and a a proteinName. It calculates a 
+        protein occupancy using the fields specified in the numerator and 
+        denominator lists.
+
+    :param dataFrame: the dataFrame to work on. Should be generated from a 
+        Skyline MRM export results CSV (e.g. dataFrame = pandas.read_csv(csvFile, na_values='#N/A'))
+        Must bear the columns "FileName, ProteinName, Area, TotalArea, TotalBackground
+    :type dataFrame: a pandas dataframe
+    :param fileName: the file to consider (the wiff file)
+    :type fileName: a string
+    :param proteinName: the protein to consider
+    :type proteinName: a string
+    :param proteinName: the protein to consider
+    :type proteinName: a string
+    :param num: species to calc in the numerator
+    :type num: a list of strings (light or heavy)
+    :param den: species to calc in the denominator
+    :type den: a list of strings (light or heavy)
+    :param total: boolean to calculate the total or on a product by product basis
+    :type total: boolean (defaults to false)
+    :param allData: a boolean to return the full dataframe or just the calculated value
+    :type allData: boolean (defaults to false)
+    
+    :returns:  a pandas dataframe with the calculated value (either appended or on its own)
+
+    """
+    allProducts = dataFrame[(dataFrame['FileName']==fileName) & (dataFrame['ProteinName']==proteinName)]
+    
+    if total:
+        stringAppend = ' TotalArea'
+    else:
+        stringAppend = ' Area'
+    
+    allProducts['num'] = 0.0
+    allProducts['den'] = 0.0
+    
+    for i in num:
+        allProducts['num'] = allProducts['num'] + allProducts[i + stringAppend]
+        if total:
+            allProducts['num'] = allProducts['num'] - allProducts[i + ' TotalBackground']
+    for i in den:
+        allProducts['den'] = allProducts['den'] + allProducts[i + stringAppend]
+        if total:
+            allProducts['den'] = allProducts['den'] - allProducts[i + ' TotalBackground']
+    
+    allProducts['calcValue'] = (allProducts['num']/allProducts['den'])*normValue+offset
+
+    if allData:
+        return allProducts
+    else:
+        if total:
+            return dropDuplicatesPandas(allProducts)['calcValue'].dropna()
+        else:
+            return allProducts['calcValue'].dropna()
+
 def calcValue(df, num, den, offset=0.0, func=unity):
     """calcVale takes a pandas dataFrame bearing the keys to be used and calculates
         the ratio of the num/den (specified as lists of the keys - AMP_U, AMP_L, AMP_S)
@@ -774,6 +831,43 @@ def calcMW(seq):
     for aa in seq:
         mw = mw+qMSDefs.aaweights[aa.upper()]
     return mw
+
+def dropDuplicatesPandas(df, cols_to_consider=None):
+    """dropDuplicatesPandas is a helper to remove duplicated rows based on a set
+        of columns that must all contain identical information.
+
+    :param df: the dataframe to be inspected
+    :type df: a pandas dataframe
+    :param cols_to_consider: the list of columns to be inspected. this defaults
+        to an extensive list that is used for the MRM material, although
+        technically an optional parameter, this should almost always be passed.
+    :type cols_to_consider: a list of strings
+    :returns: the unique dataframe
+    
+    """
+    if cols_to_consider is None:
+        cols_to_consider=['ProteinName', 'BeginPos', 'EndPos', 'MissedCleavages', 
+        'PrecursorCharge', 'FileName', 'PeptideModifiedSequence', 'PeptideRetentionTime', 
+        'light TotalArea', 'heavy TotalArea', 'light PrecursorMz', 'heavy PrecursorMz']
+    grouped = df.groupby(cols_to_consider)
+    index = [gp_keys[0] for gp_keys in grouped.groups.values()]
+    unique_df = df.reindex(index)
+    return unique_df
+
+def print_fullPandas(x):
+    """print_fullPandas is a helper function for printing a full dataframe
+
+    :param x: the pandas dataframe to be printed
+    :type x: a pandas dataframe
+    :returns: no return, simply prints the full dataframe and then resets the
+        default pandas print values.
+    
+    """
+    pd.set_option('display.max_rows', len(x))
+    pd.set_option('display.max_columns', 200)
+    print(x)
+    pd.reset_option('display.max_rows')
+    pd.reset_option('display.max_columns')
 
 def makeNameConvDict(set1, set2):
     """calcMW is a helper function that generates a name conversion dictionary.
