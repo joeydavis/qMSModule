@@ -229,7 +229,7 @@ def openListOfFiles(listOfFiles):
     return DFDict
 
 def unity(x):
-    return x
+    return x      
 
 def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0, func=unity):
     """calcStatsDict takes a dataFrame and , a numerator, a denominator, an offset (applied to value first)
@@ -515,6 +515,34 @@ def appendKeys(d1, d2):
     for k in d2:
         d1 = addBlankKey(d1, k)
     return d1
+
+def getAllOccupancyMRM(dataFrame, fileName, listOfProteins=None,
+                       num=['light'], den=['heavy'], total=False,
+                        normProtein=None, normValue=1.0, offset=0.0):
+    if listOfProteins is None:
+        listOfProteins = list(dataFrame['ProteinName'].unique())
+    pDict = {}
+    for p in listOfProteins:
+        pDict[p] = getOccupancyMRM(dataFrame, fileName, p, num=num, den=den, 
+                                    total=total, normValue=normValue, 
+                                    offset=offset, allData=False).values
+    if not (normProtein is None):
+        normValue = 1/numpy.median(pDict[normProtein])
+        for p in listOfProteins:
+            pDict[p] = getOccupancyMRM(dataFrame, fileName, p, num=num, den=den, 
+                                        total=total, normValue=normValue, 
+                                        offset=offset, allData=False).values
+    return pDict
+    
+def getAllOccupancyFileListMRM(dataFrame, fileList, listOfProteins=None, 
+                               num=['light'], den=['heavy'], total=False, 
+                                normProtein=None, normValue=1.0, offset=0.0):
+    filePDict = {}
+    for i in fileList:
+        filePDict[i] = getAllOccupancyMRM(dataFrame, i, listOfProteins=listOfProteins, 
+                                            num=num, den=den, total=total, normProtein=normProtein, 
+                                            normValue=normValue, offset=offset)
+    return filePDict
 
 def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy'], normValue=1.0, offset=0.0, total=False, allData=False):
     """getOccupancy takes a pandas dataframe generated from reading an MRM CSV file
