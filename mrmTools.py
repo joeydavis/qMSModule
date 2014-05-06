@@ -11,6 +11,41 @@ import vizLib
 import matplotlib.pyplot as plt
 import pylab
 from matplotlib import gridspec
+import pandas
+
+def calcErrorMRM(dataFrame):
+    dataFrame['error'] = abs((dataFrame['light Area']/dataFrame['heavy Area']) - ((dataFrame['light TotalArea']-dataFrame['light TotalBackground'])/(dataFrame['heavy TotalArea'] - dataFrame['heavy TotalBackground'])))
+    return dataFrame
+
+def calcFractTotalMRM(dataFrame):
+    dataFrame['light FracTotalArea'] = dataFrame['light Area']/(dataFrame['light TotalArea'])
+    dataFrame['heavy FracTotalArea'] = dataFrame['heavy Area']/(dataFrame['heavy TotalArea'])
+    return dataFrame
+
+def scoreDatasetsMRM(df, lppml, lppmh, hppml, hppmh,
+                   la, ha,
+                   dp, fal, fah,
+                    e):
+    pandas.options.mode.chained_assignment = None
+    df['score'] = 0
+    df['score'] = df['score'] + ((df['light MassErrorPPM'] > lppml) & (df['light MassErrorPPM'] < lppmh))*1 + \
+                                ((df['heavy MassErrorPPM'] > hppml) & (df['heavy MassErrorPPM'] < hppmh))*1 + \
+                                (df['light Area'] > la)*1 + \
+                                (df['heavy Area'] > ha)*1 + \
+                                (df['DotProductLightToHeavy'] > dp)*1 + \
+                                (df['light FracTotalArea'] > fal)*1 + \
+                                (df['heavy FracTotalArea'] > fah)*1 + \
+                                (df['error'] < e)*1
+
+    return df    
+'''    
+    return df[(df['light MassErrorPPM'] > lppml) & (df['light MassErrorPPM'] < lppmh) &
+              (df['heavy MassErrorPPM'] > hppml) & (df['heavy MassErrorPPM'] < hppmh) &
+              (df['light Area'] > la) & (df['heavy Area'] > ha) &
+              (df['DotProductLightToHeavy'] > dp) & (df['light FracTotalArea'] > fah) & (df['heavy FracTotalArea'] > fal) &
+              (df['error'] < e)]
+'''
+
 
 def getAllOccupancyMRM(dataFrame, fileName, listOfProteins=None,
                        num=['light'], den=['heavy'], total=False,
