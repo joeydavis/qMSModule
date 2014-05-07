@@ -26,7 +26,7 @@ def scoreDatasetsMRM(df, lppml, lppmh, hppml, hppmh,
                    la, ha,
                    dp, fal, fah,
                     e):
-    pandas.options.mode.chained_assignment = None
+#    pandas.options.mode.chained_assignment = None
     df['score'] = 0
     df['score'] = df['score'] + ((df['light MassErrorPPM'] > lppml) & (df['light MassErrorPPM'] < lppmh))*1 + \
                                 ((df['heavy MassErrorPPM'] > hppml) & (df['heavy MassErrorPPM'] < hppmh))*1 + \
