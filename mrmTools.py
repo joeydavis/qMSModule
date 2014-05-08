@@ -46,6 +46,34 @@ def scoreDatasetsMRM(df, lppml, lppmh, hppml, hppmh,
               (df['error'] < e)]
 '''
 
+def correctOccupancyMRM(ref, toCorr):
+    corr = {}
+    for p in ref.keys():
+        med = numpy.median(ref[p])
+        corr[p] = numpy.array([max(i-med, 0.0) for i in toCorr[p]])
+    return corr
+
+def correctStatsDictDictMRM(sdd, ref):
+    corrSdd = {}
+    for k in sdd.keys():
+        corrSdd[k] = correctOccupancyMRM(ref, sdd[k])
+    return corrSdd
+
+def normStatsDictMRM(sd, normValue=1.0, normProtein=None):
+    normSD = {}
+    if not normProtein==None:
+        normValue = 1.0/numpy.median(sd[normProtein])
+    for p in sd:
+        normSD[p] = numpy.array([i*normValue for i in sd[p]])
+    return normSD
+
+def normStatsDictDictMRM(sdd, normValue=1.0, normProtein=None):
+    normSDD = {}
+    for k in sdd.keys():
+        normSDD[k] = normStatsDictMRM(sdd[k], normValue, normProtein)
+    return normSDD
+    
+
 
 def getAllOccupancyMRM(dataFrame, fileName, listOfProteins=None,
                        num=['light'], den=['heavy'], total=False,
