@@ -110,7 +110,7 @@ def readIsoCSV(filename, columns=None, noProcess=False):
                      'rt_n14', 'rt_n15', 'mz_n14', 'mz_n15',
                      'ppm_n14', 'ppm_n15', 'n14mass', 'n15mass', 'protein', 'startres',
                      'endres', 'charge', 'missed', 'seq', 'mod', 'seqmod', 'file',
-                     'currentCalc', 'resid', 'minIntensity', 'ratio',
+                     'resid', 'minIntensity', 'ratio', 'currentCalc',
                      '70Spos', '50Spos', '30Spos', 'otherpos', 'currentPos',
                      'ppmDiff', 'rtDiff', 'handDelete', 'handSave']
         
@@ -137,6 +137,8 @@ def readIsoCSV(filename, columns=None, noProcess=False):
     data['rtDiff']=data['rt_n14'] - data['rt_n15']
     data['handDelete'] = False
     data['handSave'] = False
+    #data['currentCalc']=data['AMP_U'] / data['AMP_S']
+    #data['ratio']=data['AMP_U'] / data['AMP_S']
     return data
 
 def subtractDoubleSpike(refDF, dataDF):
@@ -231,7 +233,7 @@ def openListOfFiles(listOfFiles):
 def unity(x):
     return x      
 
-def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0, func=unity):
+def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0.0, func=unity, adjProt=None):
     """calcStatsDict takes a dataFrame and , a numerator, a denominator, an offset (applied to value first)
         and a normalization factor (scaling factor applied last). It returns a dictionary with keys of 
         protein names and values as a numpy array of calculated values based on numerator and denominator keys.
@@ -252,9 +254,12 @@ def calcStatsDict(dataFrame, numerator, denominator, normalization=1.0, offset=0
     """
     ps = list(set(dataFrame['protein'].values))
     ps.sort()
-    return {p:calcValue(dataFrame[dataFrame['protein']==p], numerator, denominator, offset=offset, func=func).values*normalization for p in ps}
+    toReturn = {p:calcValue(dataFrame[dataFrame['protein']==p], numerator, denominator, offset=offset, func=func).values*normalization for p in ps}
+    if not (adjProt is None):
+        toReturn[adjProt[0]] = toReturn[adjProt[0]]*adjProt[1]
+    return toReturn
 
-def multiStatsDictFromDF(dFDict, num, den, namesList=None, normalization=1.0, offset=0.0, normProtein=None):
+def multiStatsDictFromDF(dFDict, num, den, namesList=None, normalization=1.0, offset=0.0, normProtein=None, adjProt=None):
     """multiStatsDictFromDF takes a list of dataframesand a list of nums and dens.
         It returns a dict of dict (first key is the file name) - this leads to a statsDict
         that is keyed by protein names. All of the statsDicts contain a full compliment of keys 
@@ -297,10 +302,14 @@ def multiStatsDictFromDF(dFDict, num, den, namesList=None, normalization=1.0, of
     
     for name in namesList:
         dFStatsDict[name] = appendKeys(dFStatsDict[name], allPs) 
-        
+
+    if not (adjProt is None):
+        for name in namesList:
+            dFStatsDict[name][adjProt[0]] = dFStatsDict[name][adjProt[0]]*adjProt[1]
+    
     return dFStatsDict
 
-def multiStatsDict(isoFileList, num, den, normalization=1.0, offset=0.0, normProtein=None):
+def multiStatsDict(isoFileList, num, den, normalization=1.0, offset=0.0, normProtein=None, noProcess=False, adjProt=None):
     """multiStatsDict takes a list of _iso.csv files and a list of nums and dens.
         It returns a dict of dict (first key is the file name) - this leads to a statsDict
         that is keyed by protein names. All of the statsDicts contain a full compliment of keys 
@@ -326,8 +335,8 @@ def multiStatsDict(isoFileList, num, den, normalization=1.0, offset=0.0, normPro
     """
     dFDict = {}
     for i in isoFileList:
-        dFDict[i] = readIsoCSV(i)
-    return multiStatsDictFromDF(dFDict, num, den, namesList=isoFileList, normalization=normalization, offset=offset, normProtein=normProtein)
+        dFDict[i] = readIsoCSV(i, noProcess=noProcess)
+    return multiStatsDictFromDF(dFDict, num, den, namesList=isoFileList, normalization=normalization, offset=offset, normProtein=normProtein, adjProt=adjProt)
 
 def mergeFiles(fileList, numerator, denominator, normProtein=None):
     """mergeFiles takes a list of _iso.csv files and returns a merged statsFile data dictionary structure
@@ -874,7 +883,27 @@ def concatonateIsoCSVFiles(fileList, outFile='mergedOutTemp.csv'):
     fout.write(initialData)
     fout.close()
 
-def readMSSpectraFile(datapath, plots=False):
+def addProts(addFrom, addTo, output, listOfProts):
+    """Adds specific proteins from one iso csv to another
+
+    :param fileList: a list of full path strings to the files to be merged
+    :type fileList: a list of strings
+    :returns:  no return. 
+        **HAS EXTERNALITY - CREATES A NEW _ISO.CSV FILE IN THE WORKING DIRECTORY CALLED mergedOutTmp.csv.
+    
+    """
+    startingData = open(addTo, 'r').read()
+    with open(addFrom,'r') as f:
+        next(f)
+        for line in f:
+            for p in listOfProts:
+                if p in line:
+                    startingData = startingData+line
+    fout = open(output, "w")
+    fout.write(startingData)
+    fout.close()
+
+def readMSSpectraFile(datapath):
     """readMSSpectraFile is a helper function that reads a spectra .txt file (saved in the _plots directory by massacre)
 
     :param datapath: a full path string to the file to be read
@@ -973,7 +1002,8 @@ def outputSpectralCounts(path, pathOut):
     return protsDict
      
 
-def outputDataMatrixFile(filePath, dfStatsDict, keyList, num, den, subunits=None, normalization=1.0, offset=0.0, normProtein=None, rowNorms=None, delimiter=',', func=unity):
+def outputDataMatrixFile(filePath, dfStatsDict, keyList, num, den, subunits=None, normalization=1.0, offset=0.0, normProtein=None, 
+                         rowNorms=None, delimiter=',', func=unity, adjProt=None):
     """outputDataMatrixFile outputs a datamatrix that can bea easily plotted as a heat map or clustered or etc.
         It uses a dfStatsDict, keyList (the list of the dataset names), proteins to plot, the num, den, nommalization, offset, and
         normProtein if desired
@@ -1009,7 +1039,7 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, num, den, subunits=None
         rowNorms = {k:1.0 for k in keyList}
     for i in keyList:
         header = header + i + delimiter
-        statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=1.0/rowNorms[i], offset=offset)
+        statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=1.0/rowNorms[i], offset=offset, adjProt=adjProt)
         if not (normProtein is None):
             if normProtein == 'mean':
                 normValue = 1/numpy.mean(numpy.array([numpy.median(statsDictDict[i][p]) for p in statsDictDict[i].keys()]))
@@ -1017,7 +1047,7 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, num, den, subunits=None
                 normValue = 1/numpy.median(numpy.array([j for j in numpy.array([numpy.median(statsDictDict[i][p]) for p in statsDictDict[i].keys()]) if j > 0.1]))
             else:
                 normValue = 1/numpy.median(statsDictDict[i][normProtein])
-            statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normValue, offset=offset, func=func)
+            statsDictDict[i] = calcStatsDict(dfStatsDict[i], num, den, normalization=normValue, offset=offset, func=func, adjProt=adjProt)
     outFile.write(header[:-1] + '\n')
 
     if subunits is None:
