@@ -1067,6 +1067,31 @@ def outputDataMatrixFile(filePath, dfStatsDict, keyList, num, den, subunits=None
         outFile.write(line[:-1] + '\n')
     return statsDictDict
 
+def outputDataMatrixFileFromSDD(filePath, statsDictDict, keyList, subunits=None, normalization=1.0, 
+                                offset=0.0, delimiter=',', func=unity):
+    outFile = open(filePath, 'w')
+    header = 'Protein'+delimiter
+    for i in keyList:
+        header = header + i + delimiter
+    outFile.write(header[:-1] + '\n')
+
+    if subunits is None:
+        pList = []
+        for i in keyList:
+            cList = statsDictDict[i].keys()
+            for prot in cList:
+                pList.append(prot)
+        subunits = sort_nicely(list(set(pList)))
+    for p in subunits:
+        line = p + delimiter
+        for k in keyList:
+            try:
+                line = line + str(numpy.median(statsDictDict[k][p])) + delimiter
+            except KeyError:
+                line = line + delimiter
+        outFile.write(line[:-1] + '\n')
+    return statsDictDict
+
 def calcMonoisotopicMass(seq, N15=False, waterTermini=True, cysIAA=True, metOx=0):
     total = 0.000
     seq.upper()
