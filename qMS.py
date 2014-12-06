@@ -141,7 +141,7 @@ def readIsoCSV(filename, columns=None, noProcess=False):
     #data['ratio']=data['AMP_U'] / data['AMP_S']
     return data
 
-def subtractDoubleSpike(refDF, dataDF):
+def subtractDoubleSpike(refDF, dataDF, num='AMP_U', den='AMP_S'):
     """subtractDoubleSpike takes two pandas dataFrames, it first divides AMP_U by AMP_S.
         It then finds the median value for the AMP_U/S field on a protein by protein basis from the reference set.
         This is subtracted from the experimetnal fields, and they are mupliplied back by AMP_S to give the proper value.
@@ -156,19 +156,19 @@ def subtractDoubleSpike(refDF, dataDF):
 
     """
 
-    dataDF['AMP_U'] = dataDF['AMP_U']/dataDF['AMP_S']
-
-    refDF['AMP_U'] = refDF['AMP_U']/refDF['AMP_S']
+    dataDF[num] = dataDF[num]/dataDF[den]
+    refDF[num] = refDF[num]/refDF[den]
+    
     for i in dataDF.index:
         p = dataDF.ix[i]['protein']
-        med = refDF[refDF['protein']==p]['AMP_U'].median()
-        dataDF.ix[i,'AMP_U'] = max(dataDF.ix[i]['AMP_U'] - med, 0.0)
-    dataDF['AMP_U'] = dataDF['AMP_U']*dataDF['AMP_S']
-    refDF['AMP_U'] = refDF['AMP_U']*refDF['AMP_S']
+        med = refDF[refDF['protein']==p][num].median()
+        dataDF.ix[i,num] = max(dataDF.ix[i][num] - med, 0.0)
+    dataDF[num] = dataDF[num]*dataDF[den]
+    refDF[num] = refDF[num]*refDF[den]
     
     return dataDF
 
-def correctFileForDoubleSpike(expPath, refDF=None, refPath=None):
+def correctFileForDoubleSpike(expPath, refDF=None, refPath=None, num='AMP_U', den='AMP_S'):
     """correctFileForDoubleSpike takes a path to a dataset to be corrected and either a reference dataframe
         or a string pointing to the iso_csv file for the reference set (the double spike alone dataset).
         It makes a pandas DF out of the experimental data, corrects them for the double spike, and returns 
@@ -186,10 +186,10 @@ def correctFileForDoubleSpike(expPath, refDF=None, refPath=None):
     if refDF is None:
         refDF = readIsoCSV(refPath)
     currentDF = readIsoCSV(expPath)
-    currentDF = subtractDoubleSpike(refDF, currentDF)
+    currentDF = subtractDoubleSpike(refDF, currentDF, num=num, den=den)
     return currentDF
 
-def correctListOfFiles(refPath, listOfFiles, extension=None, savePath=None):
+def correctListOfFiles(refPath, listOfFiles, extension=None, savePath=None, num='AMP_U', den='AMP_S'):
     """correctListOfFiles takes a path to a reference set (double spike alone) and a list of paths to the files to be corrected.
         It makes pandas DFs out of the list of files, corrects them for the double spike, and returns a dictionary
         with the keys as the path to the file and the value as the corrected pandas dataframe
@@ -205,7 +205,7 @@ def correctListOfFiles(refPath, listOfFiles, extension=None, savePath=None):
     refDF = readIsoCSV(refPath)
     DFDict = {}
     for n,i in enumerate(listOfFiles):
-        currentDF = correctFileForDoubleSpike(i, refDF=refDF, refPath=None)
+        currentDF = correctFileForDoubleSpike(i, refDF=refDF, refPath=None, num=num, den=den)
         DFDict[i] = currentDF.copy()
         if not (extension is None):
             if (savePath is None):
@@ -213,6 +213,20 @@ def correctListOfFiles(refPath, listOfFiles, extension=None, savePath=None):
             else:
                 fileName = i.split('/')[-1]
                 currentDF.to_csv(savePath+fileName+extension, index=False)
+    return DFDict
+
+def generateDFDict(listOfFiles):
+    """generateDFDict takes list of paths to the files that will generate the dictionary of dataframes.
+        It makes pandas DFs out of the list of files, and returns a dictionary
+        with the keys as the path to the file and the value as the pandas dataframe
+
+    :param listOfFiles: a list of paths to the files to be corrected
+    :type listOfFiles: list of strings.
+    :returns:  a dictionary of a pandas DF. Each key is the dict
+        provided in the listOfFiles
+
+    """
+    DFDict = {i:readIsoCSV(i) for i in listOfFiles}
     return DFDict
 
 def openListOfFiles(listOfFiles):
