@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import pylab
 from matplotlib import gridspec
 import pandas
+import qMSDefs
 
 def calcErrorMRM(dataFrame):
     dataFrame['error'] = abs((dataFrame['light Area']/dataFrame['heavy Area']) - ((dataFrame['light TotalArea']-dataFrame['light TotalBackground'])/(dataFrame['heavy TotalArea'] - dataFrame['heavy TotalBackground'])))
@@ -39,11 +40,14 @@ def scoreDatasetsMRM(df, lppml, lppmh, hppml, hppmh,
                                 ((df['RTOffset'] > rtoL) & (df['RTOffset'] < rtoH))*1
     return df    
 
-def correctOccupancyMRM(ref, toCorr):
+def correctOccupancyMRM(ref, toCorr, maxZero=True):
     corr = {}
     for p in ref.keys():
         med = numpy.median(ref[p])
-        corr[p] = numpy.array([max(i-med, 0.0) for i in toCorr[p]])
+        if maxZero:
+            corr[p] = numpy.array([max(i-med, 0.0) for i in toCorr[p]])
+        else:
+            corr[p] = numpy.array([i-med for i in toCorr[p]])
     return corr
 
 def correctStatsDictDictMRM(sdd, ref):
@@ -65,38 +69,53 @@ def normStatsDictDictMRM(sdd, normValue=1.0, normProtein=None):
     for k in sdd.keys():
         normSDD[k] = normStatsDictMRM(sdd[k], normValue, normProtein)
     return normSDD
+
+def makeStatsDictMRM(dataFrame, fileName, field = 'currentCalc', proteinList = None, filterField = 'allClear'):
+    if proteinList is None:
+        proteinList = list(dataFrame['Protein'].unique())
+    pDict = {}
+    fileFrame = dataFrame[dataFrame['File Name'] == fileName]
+    for p in proteinList:
+        pDict[p] = fileFrame[(fileFrame['Protein'] == p) & (fileFrame[filterField])][field].values
+    return pDict
+
+def makeFileStatsDictMRM(dataFrame, listOfFiles=None, field = 'currentCalc', proteinList = None, filterField = 'allClear'):
+    if listOfFiles is None:
+        listOfFiles = list(dataFrame['File Name'].unique())
+    filePDict = {}
+    for i in listOfFiles:
+        filePDict[i] = makeStatsDictMRM(dataFrame, i, field=field, proteinList = proteinList, filterField = filterField)
+    return filePDict
     
-
-
 def getAllOccupancyMRM(dataFrame, fileName, listOfProteins=None,
                        num=['light'], den=['heavy'], total=False,
-                        normProtein=None, normValue=1.0, offset=0.0):
+                        normProtein=None, normValue=1.0, offset=0.0, selectField='File Name'):
     if listOfProteins is None:
-        listOfProteins = list(dataFrame['ProteinName'].unique())
+        listOfProteins = list(dataFrame['Protein'].unique())
     pDict = {}
     for p in listOfProteins:
         pDict[p] = getOccupancyMRM(dataFrame, fileName, p, num=num, den=den, 
                                     total=total, normValue=normValue, 
-                                    offset=offset, allData=False).values
+                                    offset=offset, allData=False, selectField=selectField).values
     if not (normProtein is None):
         normValue = 1/numpy.median(pDict[normProtein])
         for p in listOfProteins:
             pDict[p] = getOccupancyMRM(dataFrame, fileName, p, num=num, den=den, 
                                         total=total, normValue=normValue, 
-                                        offset=offset, allData=False).values
+                                        offset=offset, allData=False, selectField=selectField).values
     return pDict
    
 def getAllOccupancyFileListMRM(dataFrame, fileList, listOfProteins=None, 
                                num=['light'], den=['heavy'], total=False, 
-                                normProtein=None, normValue=1.0, offset=0.0):
+                                normProtein=None, normValue=1.0, offset=0.0, selectField='File Name'):
     filePDict = {}
     for i in fileList:
         filePDict[i] = getAllOccupancyMRM(dataFrame, i, listOfProteins=listOfProteins, 
                                             num=num, den=den, total=total, normProtein=normProtein, 
-                                            normValue=normValue, offset=offset)
+                                            normValue=normValue, offset=offset, selectField=selectField)
     return filePDict
 
-def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy'], normValue=1.0, offset=0.0, total=False, allData=False):
+def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy'], normValue=1.0, offset=0.0, total=False, allData=False, selectField='File Name'):
     """getOccupancy takes a pandas dataframe generated from reading an MRM CSV file
         as well as a fileName (eg.wiff) and a a proteinName. It calculates a 
         protein occupancy using the fields specified in the numerator and 
@@ -124,10 +143,10 @@ def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy
     :returns:  a pandas dataframe with the calculated value (either appended or on its own)
 
     """
-    allProducts = dataFrame[(dataFrame['FileName']==fileName) & (dataFrame['ProteinName']==proteinName)]
+    allProducts = dataFrame[(dataFrame[selectField]==fileName) & (dataFrame['Protein']==proteinName)]
     
     if total:
-        stringAppend = ' TotalArea'
+        stringAppend = ' Total Area'
     else:
         stringAppend = ' Area'
     
@@ -137,11 +156,11 @@ def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy
     for i in num:
         allProducts['num'] = allProducts['num'] + allProducts[i + stringAppend]
         if total:
-            allProducts['num'] = allProducts['num'] - allProducts[i + ' TotalBackground']
+            allProducts['num'] = allProducts['num'] - allProducts[i + ' Total Background']
     for i in den:
         allProducts['den'] = allProducts['den'] + allProducts[i + stringAppend]
         if total:
-            allProducts['den'] = allProducts['den'] - allProducts[i + ' TotalBackground']
+            allProducts['den'] = allProducts['den'] - allProducts[i + ' Total Background']
     
     allProducts['calcValue'] = (allProducts['num']/allProducts['den'])*normValue+offset
 
@@ -167,19 +186,19 @@ def getInfoMRM(dataFrame, index):
 
     """
     fn = dataFrame.ix[index]['FileName']
-    pepSeq = dataFrame.ix[index]['PeptideModifiedSequence']
-    precursorCharge = dataFrame.ix[index]['PrecursorCharge']
-    fragIon = dataFrame.ix[index]['FragmentIon']
-    prodCharge = dataFrame.ix[index]['ProductCharge']
-    isotope = dataFrame.ix[index]['IsotopeLabelType']
+    pepSeq = dataFrame.ix[index]['Peptide Modified Sequence']
+    precursorCharge = dataFrame.ix[index]['Precursor Charge']
+    fragIon = dataFrame.ix[index]['Fragment Ion']
+    prodCharge = dataFrame.ix[index]['Product Charge']
+    isotope = dataFrame.ix[index]['IsotopeLabel Type']
     return [fn, pepSeq, precursorCharge, fragIon, prodCharge, isotope]
 
 def getTotalChromatographMRM(dataFrame, index, fragIon=None):
     [fn, pms, preC, fi, proC, isotope] = getInfoMRM(dataFrame, index)
-    subFrame = dataFrame[(dataFrame['FileName'] == fn) &
-                         (dataFrame['PeptideModifiedSequence'] == pms) &
-                         (dataFrame['PrecursorCharge'] == preC) &
-                         (dataFrame['IsotopeLabelType'] == isotope)]
+    subFrame = dataFrame[(dataFrame['File Name'] == fn) &
+                         (dataFrame['Peptide Modified Sequence'] == pms) &
+                         (dataFrame['Precursor Charge'] == preC) &
+                         (dataFrame['Isotope Label Type'] == isotope)]
     if fragIon is None:
         first = subFrame['Intensities'].values[0].split(',')
         totArray = numpy.array([float(i) for i in first])
@@ -197,12 +216,12 @@ def getPairedIonMRM(dataFrame, index):
         isotope = 'heavy'
     else:
         isotope = 'light'
-    return dataFrame[(dataFrame['FileName'] == fn) &
-                         (dataFrame['PeptideModifiedSequence'] == pms) &
-                         (dataFrame['PrecursorCharge'] == preC) &
-                         (dataFrame['FragmentIon'] == fi) &
-                         (dataFrame['ProductCharge'] == proC) &
-                         (dataFrame['IsotopeLabelType'] == isotope)].index.values[0]
+    return dataFrame[(dataFrame['File Name'] == fn) &
+                         (dataFrame['Peptide Modified Sequence'] == pms) &
+                         (dataFrame['Precursor Charge'] == preC) &
+                         (dataFrame['Fragment Ion'] == fi) &
+                         (dataFrame['Product Charge'] == proC) &
+                         (dataFrame['Isotope Label Type'] == isotope)].index.values[0]
 
 def getIsotopPairTotalsMRM(dataFrame, index):
     [fn, pms, preC, fi, proC, isotope] = getInfoMRM(dataFrame, index)
@@ -219,10 +238,10 @@ def getIsotopPairTotalsMRM(dataFrame, index):
 
 def getRelatedIndeciesMRM(dataFrame, index):
     [fn, ps, preC, fi, proC, i] = getInfoMRM(dataFrame, index)
-    return dataFrame[(dataFrame['IsotopeLabelType'] == i) &
-                        (dataFrame['FileName'] == fn) &
-                        (dataFrame['PeptideModifiedSequence'] == ps) &
-                        (dataFrame['PrecursorCharge'] == preC)].index.values
+    return dataFrame[(dataFrame['Isotope Label Type'] == i) &
+                        (dataFrame['File Name'] == fn) &
+                        (dataFrame['Peptide Modified Sequence'] == ps) &
+                        (dataFrame['Precursor Charge'] == preC)].index.values
 
 
 def plotTotalChromPairsMRM(dataFrame, toPlotIndex, axis, 
@@ -251,12 +270,12 @@ def plotAllTransitionsMRM(dataFrame, index, a, colors=None, smooth=0, zoom=False
 
 def plotMRM(dataFrame, fileName, pepSeq, precursorCharge, fragIon, prodCharge, 
             isotopeLabel, ax, color='grey', smooth=0, zoom=False):
-    subDF = dataFrame[(dataFrame['PeptideModifiedSequence'] == pepSeq) & 
-                        (dataFrame['FragmentIon'] == fragIon) & 
-                        (dataFrame['PrecursorCharge'] == precursorCharge) & 
-                        (dataFrame['IsotopeLabelType'] == isotopeLabel) & 
-                        (dataFrame['ProductCharge'] == prodCharge) & 
-                        (dataFrame['FileName'] == fileName)]
+    subDF = dataFrame[(dataFrame['Peptide Modified Sequence'] == pepSeq) & 
+                        (dataFrame['Fragment Ion'] == fragIon) & 
+                        (dataFrame['Precursor Charge'] == precursorCharge) & 
+                        (dataFrame['Isotope Label Type'] == isotopeLabel) & 
+                        (dataFrame['Product Charge'] == prodCharge) & 
+                        (dataFrame['File Name'] == fileName)]
     X = subDF['Times'].values[0].split(',')
     Y = subDF['Intensities'].values[0].split(',')
     
@@ -319,3 +338,77 @@ def prettyPlot3TransMRM(dataFrame, toPlotIndex, figsize=(33,8.5)):
         axisArray.append(c)
     pylab.tight_layout()
     return axisArray
+
+def readMRMCSV(path, l = 'light ', h = 'heavy ', fileNameHeader = 'File Name'):
+    fileName = path.split('/')[-1].split('.')
+    dataFrame = pandas.read_csv(path)
+    s='_'
+    dataFrame['shortName'] = dataFrame[fileNameHeader].str.split('.').str[0]
+    dataFrame['UID'] =  dataFrame['shortName'] +s+ dataFrame['Protein'] +s+ dataFrame['Begin Pos'].map(str) +s+\
+                        dataFrame['End Pos'].map(str) +s+ dataFrame[l + 'Precursor Mz'].map(str).str.split('.').str[0] +s+ \
+                        dataFrame['Product Charge'].map(str) +s+ dataFrame['Fragment Ion'].str[-3:]
+    dataFrame['TID'] =  dataFrame['Protein'] +s+ dataFrame['Begin Pos'].map(str) +s+\
+                        dataFrame['End Pos'].map(str) +s+ dataFrame[l + 'Precursor Mz'].map(str).str.split('.').str[0] +s+ \
+                        dataFrame['Product Charge'].map(str) +s+ dataFrame['Fragment Ion'].str[-3:]
+    dataFrame['PID'] =  dataFrame['shortName'] +s+ dataFrame['Protein'] +s+ dataFrame['Begin Pos'].map(str) +s+\
+                        dataFrame['End Pos'].map(str) +s+ dataFrame[l + 'Precursor Mz'].map(str).str.split('.').str[0]
+    dataFrame[l+'AdjArea'] = dataFrame[l+'Area'] - dataFrame[l+'Background']
+    dataFrame.loc[dataFrame[l+'AdjArea']<0, l+'AdjArea'] = 0
+    dataFrame[h+'AdjArea'] = dataFrame[h+'Area'] - dataFrame[h+'Background']
+    dataFrame.loc[dataFrame[h+'AdjArea']<0, h+'AdjArea'] = 0
+    dataFrame['currentCalc'] = calcValue(dataFrame, [l], [h])
+    dataFrame['ratio'] = calcValue(dataFrame, [l],[h])
+    dataFrame = dataFrame[pandas.notnull(dataFrame[fileNameHeader])]
+    
+    positionOtherDict = {key:int(value)+1 for value, key in enumerate(qMS.sort_nicely(sorted(set(dataFrame['Protein'].values))))}
+    positionLookupOther = pandas.Series(positionOtherDict)
+    dataFrame['otherpos']=positionLookupOther[dataFrame['Protein']].values
+    dataFrame['handDelete'] = False
+    dataFrame['handSave'] = False
+    dataFrame['PPMtranLH'] = abs(dataFrame[l+'Mass Error PPM'] - dataFrame[h+'Mass Error PPM'])
+    dataFrame['PPMtranTRANALL_light'] = abs(dataFrame[l+'Mass Error PPM'] - dataFrame[l+'Average Mass Error PPM'])
+    dataFrame['PPMtranTRANALL_heavy'] = abs(dataFrame[h+'Mass Error PPM'] - dataFrame[h+'Average Mass Error PPM'])
+    dataFrame['PPMtranTRANALL'] = dataFrame[['PPMtranTRANALL_light', 'PPMtranTRANALL_heavy']].max(axis=1)
+    
+    dataFrame['RTdsLH'] = abs(dataFrame[l+'Retention Time'] - dataFrame[h+'Retention Time'])
+    dataFrame['RTdsTRANALL_light'] = abs(dataFrame[l+'Retention Time'] - dataFrame[l+'Best Retention Time'])
+    dataFrame['RTdsTRANALL_heavy'] = abs(dataFrame[h+'Retention Time'] - dataFrame[h+'Best Retention Time'])
+    dataFrame['RTdsTRANALL'] = dataFrame[['RTdsTRANALL_light', 'RTdsTRANALL_heavy']].max(axis=1)
+    
+    dataFrame['RTpepTRANALL_light'] = abs(dataFrame[l+'Retention Time'] - dataFrame['Average Measured Retention Time'])
+    dataFrame['RTpepTRANALL_heavy'] = abs(dataFrame[h+'Retention Time'] - dataFrame['Average Measured Retention Time'])
+    dataFrame['RTpepTRANALL'] = dataFrame[['RTpepTRANALL_light', 'RTpepTRANALL_heavy']].max(axis=1)
+    if not 'priorFilter' in dataFrame.columns:
+        dataFrame['priorFilter'] = True
+    if not 'allClear' in dataFrame.columns:
+        dataFrame['allClear'] = dataFrame['priorFilter']
+    
+    for p in list(dataFrame['Protein'].unique()):
+        peptides = list(dataFrame.loc[dataFrame['Protein'] == p, 'Peptide Modified Sequence'].unique())
+        for n, pep in enumerate(peptides):
+            l = float(len(peptides))
+            ind = n/l
+            dataFrame.loc[(dataFrame['Peptide Modified Sequence'] == pep) & (dataFrame['Protein'] == p),'colOff'] = ind
+    
+    dataFrame['currentPosDataset']=dataFrame['otherpos']
+    positionFileDict = {key:int(value)+1 for value,key in enumerate(qMS.sort_nicely(sorted(dataFrame[fileNameHeader].unique())))}
+    positionFileLookup = pandas.Series(positionFileDict)
+    dataFrame['currentPosProtein']=positionFileLookup[dataFrame[fileNameHeader]].values
+    dataFrame.loc[dataFrame['currentCalc'] == numpy.inf, 'allClear'] = False
+    return dataFrame
+
+def calcValue(df, num, den, offset=0.0, func=qMS.unity):
+    nsDF = df[num[0]+'AdjArea']
+    dsDF = df[den[0]+'AdjArea']
+    for x in num[1:]:
+        nsDF = nsDF + df[x+'AdjArea']
+    for x in den[1:]:
+        dsDF = dsDF + df[x+'AdjArea']
+    try:
+        value = nsDF/dsDF + offset
+    except TypeError:
+        print "Error in calculating values - some entry must contain strings." 
+        print "This can be fixed by deleting this row in vi (you'll see a bunch of NaN values there)." 
+        print "Until this is fixed, all values set to 0.0" 
+        value = -10.0
+    return func(value)

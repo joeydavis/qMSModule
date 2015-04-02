@@ -96,6 +96,13 @@ def readIsoCSV(filename, columns=None, noProcess=False):
         pulse = 'AMP_S' in header
         varLab = 'FRC_NX' in header
         al = 'AMP_L' in header
+        allClear = 'allClear' in header
+        origin = 'originFile' in header
+        TID = 'TID' in header
+        UID = 'UID' in header
+        priorFilt = 'priorFilter' in header
+        allFPass = 'allFPass' in header
+        shortName = 'shortName' in header
         
         if noProcess:
             columns=['isofile', 'isoprotein', 'isopep', 'mw', 'isoz_charge', 'tim', 
@@ -121,6 +128,21 @@ def readIsoCSV(filename, columns=None, noProcess=False):
             columns.append('FRC_NX')
         if al:
             columns.append('AMP_L')
+        if origin:
+            columns.append('originFile')
+        if allClear:
+            columns.append('allClear')
+        if TID:
+            columns.append('TID')
+        if UID:
+            columns.append('UID')
+        if priorFilt:
+            columns.append('priorFilter')
+        if allFPass:
+            columns.append('allFPass')
+        if shortName:
+            columns.append('shortName')
+
     data = pd.read_csv(filename, usecols=columns)
     if not pulse:
         data = data.rename(columns={'AMP_L': 'AMP_S'})
@@ -135,10 +157,14 @@ def readIsoCSV(filename, columns=None, noProcess=False):
     data['currentPos']=data['otherpos']
     data['ppmDiff']=data['ppm_n14'] - data['ppm_n15']
     data['rtDiff']=data['rt_n14'] - data['rt_n15']
-    data['handDelete'] = False
-    data['handSave'] = False
-    #data['currentCalc']=data['AMP_U'] / data['AMP_S']
-    #data['ratio']=data['AMP_U'] / data['AMP_S']
+    if not allClear:
+        data['allClear'] = True
+        data['handDelete'] = False
+        data['handSave'] = False
+    if not priorFilt:
+        data['priorFilter'] = True
+    if not allFPass:
+        data['allFPass'] = True
     return data
 
 def subtractDoubleSpike(refDF, dataDF, num='AMP_U', den='AMP_S'):
