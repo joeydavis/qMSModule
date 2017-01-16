@@ -142,7 +142,11 @@ def readIsoCSV(filename, columns=None, noProcess=False):
             columns.append('allFPass')
         if shortName:
             columns.append('shortName')
-
+    
+    ttof = 'matchmodex' in header
+    if ttof:
+        columns.append('pks_orig_rt_n14')
+        columns.append('pks_orig_rt_n15')
     data = pd.read_csv(filename, usecols=columns)
     if not pulse:
         data = data.rename(columns={'AMP_L': 'AMP_S'})
@@ -165,7 +169,42 @@ def readIsoCSV(filename, columns=None, noProcess=False):
         data['priorFilter'] = True
     if not allFPass:
         data['allFPass'] = True
+    if not origin:
+        data['originFile'] = filename
+    if ttof:
+        data['missed'] = data.apply(lambda row: calcMissedTTOF(row), axis=1)
+        data['ppm_n14'] = data.apply(lambda row: calcPPMTTOF(row), axis=1)
+        data['rtDiff'] = data.apply(lambda row: calcRTDiffTTOF(row), axis=1)
+        data['ppm_n15'] = data['ppm_n14']
+        data['ppmDiff'] = data['ppm_n14'] - data['ppm_n14'].median()
     return data
+
+def calcRTDiffTTOF(row, origField = 'pks_orig_rt_n14', finalField='rt_n14'):
+    return row[origField] - row[finalField]
+
+def calcPPMTTOF(row, field='mz_n14', useCharge=True):
+    try:
+        return 1e6*(row['OFF']/row[field])
+    except TypeError:
+        return -999
+
+def calcMissedTTOF(row, cutters = ['R', 'K'], field='seq'):
+    """calcMissed looks at the sequence and calculates the number of missed cleavages.
+        If there is a non-correct C terminus, it returns -1 (non tryptic, for example)
+       
+    :param row: a pandas series that must contain a the sequence in the correct field
+    :type row: pandas series
+    :param cutters: an array with the letters to look for in the sequence as missed cleavages.
+    :type cutters: an array of strings
+    :param field: a string with the index name for the field to search.
+    :type field: string
+    
+    """
+    totalMissed = 0    
+    for c in cutters:
+        totalMissed+=row[field].count(c)
+    return totalMissed-1
+    
 
 def subtractDoubleSpike(refDF, dataDF, num='AMP_U', den='AMP_S'):
     """subtractDoubleSpike takes two pandas dataFrames, it first divides AMP_U by AMP_S.
@@ -685,10 +724,13 @@ def calcResidual(datapath, dataFrame, genPlots=False):
             datPd['residAdj'] = 666
             calcResid = 666
             calcMinIntensity = -666
-        row = dataFrame[dataFrame['isofile']==iso]
-        row['resid'] = calcResid
-        row['minIntensity'] = calcMinIntensity
-        dataFrame.update(row)
+        #row = dataFrame[dataFrame['isofile']==iso]
+        #row['resid'] = calcResid
+        #row['minIntensity'] = calcMinIntensity
+        #dataFrame.update(row)
+        rowIX = dataFrame[dataFrame['isofile']==iso].index.values[0]
+        dataFrame.loc[rowIX, 'resid'] = calcResid
+        dataFrame.loc[rowIX, 'minIntensity'] = calcMinIntensity
         if genPlots:
             datPd.to_csv(datapath+iso+'.plots', index=False)
     return dataFrame
@@ -838,9 +880,9 @@ def dropDuplicatesPandas(df, cols_to_consider=None):
     
     """
     if cols_to_consider is None:
-        cols_to_consider=['ProteinName', 'BeginPos', 'EndPos', 'MissedCleavages', 
-        'PrecursorCharge', 'FileName', 'PeptideModifiedSequence', 'PeptideRetentionTime', 
-        'light TotalArea', 'heavy TotalArea', 'light PrecursorMz', 'heavy PrecursorMz']
+        cols_to_consider=['Protein Name', 'Begin Pos', 'End Pos', 'Missed Cleavages', 
+        'Precursor Charge', 'File Name', 'Peptide Modified Sequence', 'Average Measured Retention Time', 
+        'light Total Area', 'heavy Total Area', 'light Precursor Mz', 'heavy Precursor Mz']
     grouped = df.groupby(cols_to_consider)
     index = [gp_keys[0] for gp_keys in grouped.groups.values()]
     unique_df = df.reindex(index)
@@ -1214,3 +1256,21 @@ def to_precision(x,p):
 
     return "".join(out)
 
+def makeStatsDictMRM(df, pList=[], fList=[], fileNameField='File Name', proteinNameField = 'Protein Name', 
+                     outputField='RatioLightToHeavy', median=True):
+    statsDict = {}
+    for prot in pList:
+        statsDict[prot]={}
+        for f in fList:
+            hold = df[(df[fileNameField]==f) & (df[proteinNameField]==prot)][outputField]
+            if median:
+                statsDict[prot][f]=hold.median()
+            else:
+                statsDict[prot][f]=list(hold.values)
+    return statsDict
+    
+def saveRPOnly(inputFile, outputFile, stringContains=['RS', 'RL'], field='protein'):
+    init = readIsoCSV(inputFile)
+    goodIdx = init[field].str.contains('|'.join([i for i in stringContains]))
+    init[goodIdx].to_csv(outputFile, index=False)
+    

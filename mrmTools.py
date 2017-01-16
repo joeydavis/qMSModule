@@ -15,8 +15,8 @@ import pandas
 import qMSDefs
 
 def calcErrorMRM(dataFrame):
-    dataFrame['error'] = abs((dataFrame['light Area']/dataFrame['heavy Area']) - ((dataFrame['light TotalArea']-dataFrame['light TotalBackground'])/(dataFrame['heavy TotalArea'] - dataFrame['heavy TotalBackground'])))
-    dataFrame['errorFrac'] = dataFrame['error']/((dataFrame['light TotalArea']-dataFrame['light TotalBackground'])/(dataFrame['heavy TotalArea'] - dataFrame['heavy TotalBackground']))
+    dataFrame['error'] = abs((dataFrame['light Area']/dataFrame['heavy Area']) - (dataFrame['light TotalArea'])/(dataFrame['heavy TotalArea']))
+    dataFrame['errorFrac'] = dataFrame['error']/(dataFrame['light TotalArea']/dataFrame['heavy TotalArea'])
     dataFrame['RTOffset'] = dataFrame['light RetentionTime'] - dataFrame['heavy RetentionTime']
     dataFrame['light FracTotalArea'] = dataFrame['light Area']/(dataFrame['light TotalArea'])
     dataFrame['heavy FracTotalArea'] = dataFrame['heavy Area']/(dataFrame['heavy TotalArea'])
@@ -72,11 +72,11 @@ def normStatsDictDictMRM(sdd, normValue=1.0, normProtein=None):
 
 def makeStatsDictMRM(dataFrame, fileName, field = 'currentCalc', proteinList = None, filterField = 'allClear'):
     if proteinList is None:
-        proteinList = list(dataFrame['Protein'].unique())
+        proteinList = list(dataFrame['Protein Name'].unique())
     pDict = {}
     fileFrame = dataFrame[dataFrame['File Name'] == fileName]
     for p in proteinList:
-        pDict[p] = fileFrame[(fileFrame['Protein'] == p) & (fileFrame[filterField])][field].values
+        pDict[p] = fileFrame[(fileFrame['Protein Name'] == p) & (fileFrame[filterField])][field].values
     return pDict
 
 def makeFileStatsDictMRM(dataFrame, listOfFiles=None, field = 'currentCalc', proteinList = None, filterField = 'allClear'):
@@ -91,7 +91,7 @@ def getAllOccupancyMRM(dataFrame, fileName, listOfProteins=None,
                        num=['light'], den=['heavy'], total=False,
                         normProtein=None, normValue=1.0, offset=0.0, selectField='File Name'):
     if listOfProteins is None:
-        listOfProteins = list(dataFrame['Protein'].unique())
+        listOfProteins = list(dataFrame['Protein Name'].unique())
     pDict = {}
     for p in listOfProteins:
         pDict[p] = getOccupancyMRM(dataFrame, fileName, p, num=num, den=den, 
@@ -123,7 +123,7 @@ def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy
 
     :param dataFrame: the dataFrame to work on. Should be generated from a 
         Skyline MRM export results CSV (e.g. dataFrame = pandas.read_csv(csvFile, na_values='#N/A'))
-        Must bear the columns "FileName, ProteinName, Area, TotalArea, TotalBackground
+        Must bear the columns "FileName, ProteinName, Area, TotalArea
     :type dataFrame: a pandas dataframe
     :param fileName: the file to consider (the wiff file)
     :type fileName: a string
@@ -143,7 +143,7 @@ def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy
     :returns:  a pandas dataframe with the calculated value (either appended or on its own)
 
     """
-    allProducts = dataFrame[(dataFrame[selectField]==fileName) & (dataFrame['Protein']==proteinName)]
+    allProducts = dataFrame[(dataFrame[selectField]==fileName) & (dataFrame['Protein Name']==proteinName)]
     
     if total:
         stringAppend = ' Total Area'
@@ -155,12 +155,8 @@ def getOccupancyMRM(dataFrame, fileName, proteinName, num=['light'], den=['heavy
     
     for i in num:
         allProducts['num'] = allProducts['num'] + allProducts[i + stringAppend]
-        if total:
-            allProducts['num'] = allProducts['num'] - allProducts[i + ' Total Background']
     for i in den:
         allProducts['den'] = allProducts['den'] + allProducts[i + stringAppend]
-        if total:
-            allProducts['den'] = allProducts['den'] - allProducts[i + ' Total Background']
     
     allProducts['calcValue'] = (allProducts['num']/allProducts['den'])*normValue+offset
 
@@ -339,30 +335,28 @@ def prettyPlot3TransMRM(dataFrame, toPlotIndex, figsize=(33,8.5)):
     pylab.tight_layout()
     return axisArray
 
-def readMRMCSV(path, l = 'light ', h = 'heavy ', fileNameHeader = 'File Name'):
+def readMRMCSV(path, l = 'light ', h = 'heavy ', fileNameHeader = 'File Name', proteinNameHeader = 'Protein Name'):
     fileName = path.split('/')[-1].split('.')
     dataFrame = pandas.read_csv(path)
     s='_'
     dataFrame['shortName'] = dataFrame[fileNameHeader].str.split('.').str[0]
-    dataFrame['UID'] =  dataFrame['shortName'] +s+ dataFrame['Protein'] +s+ dataFrame['Begin Pos'].map(str) +s+\
+    dataFrame['UID'] =  dataFrame['shortName'] +s+ dataFrame[proteinNameHeader] +s+ dataFrame['Begin Pos'].map(str) +s+\
                         dataFrame['End Pos'].map(str) +s+ dataFrame[l + 'Precursor Mz'].map(str).str.split('.').str[0] +s+ \
                         dataFrame['Product Charge'].map(str) +s+ dataFrame['Fragment Ion'].str[-3:]
-    dataFrame['TID'] =  dataFrame['Protein'] +s+ dataFrame['Begin Pos'].map(str) +s+\
+    dataFrame['TID'] =  dataFrame[proteinNameHeader] +s+ dataFrame['Begin Pos'].map(str) +s+\
                         dataFrame['End Pos'].map(str) +s+ dataFrame[l + 'Precursor Mz'].map(str).str.split('.').str[0] +s+ \
                         dataFrame['Product Charge'].map(str) +s+ dataFrame['Fragment Ion'].str[-3:]
-    dataFrame['PID'] =  dataFrame['shortName'] +s+ dataFrame['Protein'] +s+ dataFrame['Begin Pos'].map(str) +s+\
+    dataFrame['PID'] =  dataFrame['shortName'] +s+ dataFrame[proteinNameHeader] +s+ dataFrame['Begin Pos'].map(str) +s+\
                         dataFrame['End Pos'].map(str) +s+ dataFrame[l + 'Precursor Mz'].map(str).str.split('.').str[0]
-    dataFrame[l+'AdjArea'] = dataFrame[l+'Area'] - dataFrame[l+'Background']
-    dataFrame.loc[dataFrame[l+'AdjArea']<0, l+'AdjArea'] = 0
-    dataFrame[h+'AdjArea'] = dataFrame[h+'Area'] - dataFrame[h+'Background']
-    dataFrame.loc[dataFrame[h+'AdjArea']<0, h+'AdjArea'] = 0
+    dataFrame[l+'AdjArea'] = dataFrame[l+'Area']
+    dataFrame[h+'AdjArea'] = dataFrame[h+'Area']
     dataFrame['currentCalc'] = calcValue(dataFrame, [l], [h])
     dataFrame['ratio'] = calcValue(dataFrame, [l],[h])
     dataFrame = dataFrame[pandas.notnull(dataFrame[fileNameHeader])]
     
-    positionOtherDict = {key:int(value)+1 for value, key in enumerate(qMS.sort_nicely(sorted(set(dataFrame['Protein'].values))))}
+    positionOtherDict = {key:int(value)+1 for value, key in enumerate(qMS.sort_nicely(sorted(set(dataFrame[proteinNameHeader].values))))}
     positionLookupOther = pandas.Series(positionOtherDict)
-    dataFrame['otherpos']=positionLookupOther[dataFrame['Protein']].values
+    dataFrame['otherpos']=positionLookupOther[dataFrame[proteinNameHeader]].values
     dataFrame['handDelete'] = False
     dataFrame['handSave'] = False
     dataFrame['PPMtranLH'] = abs(dataFrame[l+'Mass Error PPM'] - dataFrame[h+'Mass Error PPM'])
@@ -383,12 +377,12 @@ def readMRMCSV(path, l = 'light ', h = 'heavy ', fileNameHeader = 'File Name'):
     if not 'allClear' in dataFrame.columns:
         dataFrame['allClear'] = dataFrame['priorFilter']
     
-    for p in list(dataFrame['Protein'].unique()):
-        peptides = list(dataFrame.loc[dataFrame['Protein'] == p, 'Peptide Modified Sequence'].unique())
+    for p in list(dataFrame[proteinNameHeader].unique()):
+        peptides = list(dataFrame.loc[dataFrame[proteinNameHeader] == p, 'Peptide Modified Sequence'].unique())
         for n, pep in enumerate(peptides):
             l = float(len(peptides))
             ind = n/l
-            dataFrame.loc[(dataFrame['Peptide Modified Sequence'] == pep) & (dataFrame['Protein'] == p),'colOff'] = ind
+            dataFrame.loc[(dataFrame['Peptide Modified Sequence'] == pep) & (dataFrame[proteinNameHeader] == p),'colOff'] = ind
     
     dataFrame['currentPosDataset']=dataFrame['otherpos']
     positionFileDict = {key:int(value)+1 for value,key in enumerate(qMS.sort_nicely(sorted(dataFrame[fileNameHeader].unique())))}
@@ -397,18 +391,148 @@ def readMRMCSV(path, l = 'light ', h = 'heavy ', fileNameHeader = 'File Name'):
     dataFrame.loc[dataFrame['currentCalc'] == numpy.inf, 'allClear'] = False
     return dataFrame
 
-def calcValue(df, num, den, offset=0.0, func=qMS.unity):
-    nsDF = df[num[0]+'AdjArea']
-    dsDF = df[den[0]+'AdjArea']
+def calcValue(df, num, den, field = 'AdjArea', offset=0.0, func=qMS.unity):
+    nsDF = df[num[0]+field]
     for x in num[1:]:
-        nsDF = nsDF + df[x+'AdjArea']
-    for x in den[1:]:
-        dsDF = dsDF + df[x+'AdjArea']
-    try:
-        value = nsDF/dsDF + offset
-    except TypeError:
-        print "Error in calculating values - some entry must contain strings." 
-        print "This can be fixed by deleting this row in vi (you'll see a bunch of NaN values there)." 
-        print "Until this is fixed, all values set to 0.0" 
-        value = -10.0
+        nsDF = nsDF + df[x+field]
+    if den == 'label-free':
+        value = nsDF + offset    
+    else:
+        dsDF = df[den[0]+field]
+        for x in den[1:]:
+            dsDF = dsDF + df[x+field]
+        try:
+            value = nsDF/dsDF + offset
+        except TypeError:
+            print "Error in calculating values - some entry must contain strings." 
+            print "This can be fixed by deleting this row in vi (you'll see a bunch of NaN values there)." 
+            print "Until this is fixed, all values set to 0.0" 
+            value = -10.0
     return func(value)
+
+def calcAdjValue(df, isotopeLabels=['light ', 'heavy '], field='Area'):
+    for i in isotopeLabels:
+        df.loc[:, i+'AdjArea'] = df[i+field]
+    return df
+
+def calcMRMTotalProtOcc(dfTotal, proteins, files, num=['light '], den=['heavy ']):
+    dfTotal.loc[:,'currentCalc'] = calcValue(dfTotal, num, den)
+    d = {}
+    for i in proteins:
+        d[i]={}
+        for j in files:
+            peps = list(set(dfTotal[(dfTotal['Protein Name']==i) & (dfTotal['File Name']==j)]['Peptide Modified Sequence']))
+            d[i][j]=[]
+            for k in peps:
+                d[i][j].append(dfTotal[(dfTotal['Protein Name']==i) & 
+                                       (dfTotal['File Name']==j) & 
+                                       (dfTotal['Peptide Modified Sequence']==k)]['currentCalc'].values[0])
+    return d
+
+def calcForUniquePeps(mdf, num = ['light'], den = ['heavy']):
+    assert len(mdf['File Name'].unique()) == 1, 'Please pass a datafram with only one file name to calcForUniquePeps'
+    
+    ups = mdf['Peptide Modified Sequence With Charge'].unique()
+    upsDict = {}
+    
+    for u in ups:
+        upsDict[u] = {'precursorCalc':numpy.nan, 'productCalc':numpy.nan, 'totalCalc':numpy.nan}
+    for pep in ups:
+        numTotal = [0.0,0.0,0.0]
+        denTotal = [0.0,0.0,0.0]
+        for n in num:
+            numTotal[0] = float(numTotal[0] + mdf.loc[(mdf['Peptide Modified Sequence With Charge'] == pep) & 
+                                                      (mdf['Fragment Ion Type'] == 'precursor'), n+' Area'].sum())
+            numTotal[1] = float(numTotal[1] + mdf.loc[(mdf['Peptide Modified Sequence With Charge'] == pep) & 
+                                                      (mdf['Fragment Ion Type'] != 'product'), n+' Area'].sum())
+        numTotal[2] = numTotal[0]+numTotal[1]
+        for d in den:
+            denTotal[0] = float(denTotal[0] + mdf.loc[(mdf['Peptide Modified Sequence With Charge'] == pep) & 
+                                      (mdf['Fragment Ion Type'] == 'precursor'), d+' Area'].sum())
+            denTotal[1] = float(denTotal[1] + mdf.loc[(mdf['Peptide Modified Sequence With Charge'] == pep) & 
+                                      (mdf['Fragment Ion Type'] != 'product'), d+' Area'].sum())
+        denTotal[2] = denTotal[0]+denTotal[1]
+        try:
+            upsDict[pep]['precursorCalc'] = numTotal[0]/denTotal[0]
+        except ZeroDivisionError:
+            upsDict[pep]['precursorCalc'] = numpy.nan
+        try:
+            upsDict[pep]['productCalc'] = numTotal[1]/denTotal[1]
+        except ZeroDivisionError:
+            upsDict[pep]['productCalc'] = numpy.nan
+        try:
+            upsDict[pep]['totalCalc'] = numTotal[2]/denTotal[2]
+        except ZeroDivisionError:
+            upsDict[pep]['totalCalc'] = numpy.nan
+    return upsDict
+    
+def getValByProt(mdf, proteinName, upsDict, averageMethod = 'median', field = 'productCalc', allValues = False):
+    assert len(mdf['File Name'].unique()) == 1, 'Please pass a dataframe with only a single file name to getValByProt'
+    assert (averageMethod == 'median' or averageMethod == 'mean')
+    
+    pepsToAvg = mdf[mdf['Protein Name'] == proteinName]['Peptide Modified Sequence With Charge'].unique()
+    valList = []
+    for p in pepsToAvg:
+        valList.append(upsDict[p][field])
+    
+    if averageMethod == 'median':
+        toReturn = numpy.nanmedian(valList)
+    else:
+        toReturn = numpy.nanmean(valList)
+        
+    if allValues:
+        toReturn = [toReturn]
+        toReturn.append(valList)
+    else:
+        return toReturn
+    
+def calcFullOccupancyHeatMap(df, allFiles = None, allProteins = None, num = ['light'], den = ['heavy'], averageMethod = 'median', field = 'productCalc', allValues = False, nameField='File Name'):
+    if allProteins == None:    
+        allProteins = df['Protein Name'].unique()
+    if allFiles == None:
+        allFiles = df[nameField].unique()
+    prot_file_dict = {}
+    for p in allProteins:
+        prot_file_dict[p] = {}
+        for file_dict in allFiles:
+            prot_file_dict[p][file_dict] = [numpy.nan]
+    for f in allFiles:
+        subDF = df[df[nameField] == f]
+        upCalc = calcForUniquePeps(subDF)
+        for p in allProteins:
+            prot_file_dict[p][f] = getValByProt(subDF, p, upCalc)
+    prot_file_dataFrame = pandas.DataFrame(prot_file_dict)
+    return prot_file_dataFrame
+
+def filterDF(df, sigmas=2, ppmDiff=15, RTDiff=None, ldp=0.2, lhDP=0.6, nameField='File Name'):
+    df['Peptide Modified Sequence With Charge'] = df['Peptide Modified Sequence'] + '[+' + df['Precursor Charge'].map(str) + ']'
+    fileNames = qMS.sort_nicely(list(df[nameField].unique()))
+    for fn in fileNames:
+        uH = df[df[nameField] == fn]['heavy Mass Error PPM'].mean()
+        uL = df[df[nameField] == fn]['light Mass Error PPM'].mean()
+        sH = df[df[nameField] == fn]['heavy Mass Error PPM'].std()
+        sL = df[df[nameField] == fn]['light Mass Error PPM'].std()
+
+        df.loc[(df[nameField] == fn), 'hPPM'] = abs(df.loc[(df[nameField] == fn), 'heavy Mass Error PPM'] - uH) < sigmas * sH
+        df.loc[(df[nameField] == fn), 'lPPM'] = abs(df.loc[(df[nameField] == fn), 'light Mass Error PPM'] - uL) < sigmas * sL
+
+        df.loc[(df[nameField] == fn), 'ppmDiff'] = abs(df.loc[(df[nameField] == fn), 'heavy Mass Error PPM'] - 
+                                                      df.loc[(df[nameField] == fn), 'light Mass Error PPM']) < ppmDiff
+
+        if not RTDiff is None:
+            df.loc[(df[nameField] == fn), 'RTDiff'] = abs(df.loc[(df[nameField] == fn), 'light Retention Time'] - 
+                                                          df.loc[(df[nameField] == fn), 'heavy Retention Time']) < RTDiff
+
+        df.loc[(df[nameField] == fn), 'hLDP'] = df.loc[(df[nameField] == fn), 'heavy Library Dot Product'] > ldp
+        df.loc[(df[nameField] == fn), 'lLDP'] = df.loc[(df[nameField] == fn), 'light Library Dot Product'] > ldp
+    
+        df.loc[(df[nameField] == fn), 'dpLTH'] = df.loc[(df[nameField] == fn), 'DotProductLightToHeavy'] > lhDP
+    
+        df.loc[(df[nameField] == fn), 'allClear'] = ((df.loc[(df[nameField] == fn), 'hPPM']) &
+                                                (df.loc[(df[nameField] == fn), 'lPPM']) &
+                                                (df.loc[(df[nameField] == fn), 'ppmDiff']) &
+                                                (df.loc[(df[nameField] == fn), 'RTDiff']) &
+                                                (df.loc[(df[nameField] == fn), 'hLDP']) & 
+                                                (df.loc[(df[nameField] == fn), 'lLDP']) & 
+                                                (df.loc[(df[nameField] == fn), 'dpLTH']))
+    return df
